@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://dwt6crl3g2ma6"]
+
+[ext_resource type="Texture2D" uid="uid://bua6evv3hox53" path="res://assets/sprites/obstacles.png" id="1_2evwo"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_t5c5l"]
+atlas = ExtResource("1_2evwo")
+region = Rect2(32, 0, 16, 16)
+
+[node name="Barrel" type="Obstacle"]
+kind = 2
+
+[node name="Sprite" type="Sprite2D" parent="."]
+position = Vector2(8, 4)
+texture = SubResource("AtlasTexture_t5c5l")

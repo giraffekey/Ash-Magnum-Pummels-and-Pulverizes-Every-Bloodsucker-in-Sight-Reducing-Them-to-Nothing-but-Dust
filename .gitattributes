@@ -1,0 +1,8 @@
+godot/assets/sprites/obstacles.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/shadows.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/tileset.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/whip.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/abilities.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/allies.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/cursor.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/enemies.png filter=lfs diff=lfs merge=lfs -text

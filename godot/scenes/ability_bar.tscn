@@ -1,0 +1,84 @@
+[gd_scene load_steps=11 format=3 uid="uid://d1o6clxpxrgac"]
+
+[ext_resource type="Texture2D" uid="uid://ba7xgndjq62px" path="res://assets/sprites/abilities.png" id="1_pcuxt"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0d4i1"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7gg8v"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bevug"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3nrpt"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b6mi6"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_i88h6"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3xbra"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y12f4"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c7jss"]
+atlas = ExtResource("1_pcuxt")
+
+[node name="Abilities" type="AbilityBar"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 334.0
+offset_bottom = -480.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AbilityIcon0" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_0d4i1")
+
+[node name="AbilityIcon1" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_7gg8v")
+
+[node name="AbilityIcon2" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_bevug")
+
+[node name="AbilityIcon3" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_3nrpt")
+
+[node name="AbilityIcon4" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_b6mi6")
+
+[node name="AbilityIcon5" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_i88h6")
+
+[node name="AbilityIcon6" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_3xbra")
+
+[node name="AbilityIcon7" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_y12f4")
+
+[node name="AbilityIcon8" type="AbilityIcon" parent="."]
+visible = false
+layout_mode = 2
+texture = SubResource("AtlasTexture_c7jss")
