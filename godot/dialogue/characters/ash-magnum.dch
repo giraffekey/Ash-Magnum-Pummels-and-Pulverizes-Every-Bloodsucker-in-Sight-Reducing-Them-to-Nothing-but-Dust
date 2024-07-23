@@ -1,0 +1,30 @@
+{
+"@path": "res://addons/dialogic/Resources/character.gd",
+"@subpath": NodePath(""),
+"_translation_id": "",
+"color": Color(1, 1, 1, 1),
+"custom_info": {
+"sound_mood_default": "",
+"sound_moods": {},
+"style": "basic"
+},
+"default_portrait": "Main",
+"description": "",
+"display_name": "Ash Magnum, the Vampire Slayer",
+"mirror": false,
+"nicknames": ["(who will pummel and pulverize every bloodsucker in sight)"],
+"offset": Vector2(0, 0),
+"portraits": {
+"Main": {
+"export_overrides": {
+"image": "\"res://assets/sprites/portraits/ash-magnum.png\""
+},
+"ignore_char_scale": false,
+"mirror": false,
+"offset": Vector2(0, -25),
+"scale": 0.75,
+"scene": ""
+}
+},
+"scale": 1.0
+}

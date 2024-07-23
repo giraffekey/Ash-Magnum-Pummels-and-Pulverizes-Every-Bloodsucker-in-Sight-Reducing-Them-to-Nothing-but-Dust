@@ -17,61 +17,25 @@ tracks/0/keys = {
 "values": [0]
 }
 
-[sub_resource type="Animation" id="Animation_pk0av"]
-resource_name = "back_walk"
-length = 0.2
-loop_mode = 1
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 1,
-"values": [2, 3]
-}
-
-[sub_resource type="Animation" id="Animation_mgjnd"]
-resource_name = "front_walk"
-length = 0.2
-loop_mode = 1
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 1,
-"values": [0, 1]
-}
-
-[sub_resource type="Animation" id="Animation_gwpec"]
-resource_name = "side_walk"
-length = 0.2
-loop_mode = 1
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 1,
-"values": [4, 5]
-}
-
-[sub_resource type="Animation" id="Animation_0e2uh"]
-resource_name = "front_idle"
+[sub_resource type="Animation" id="Animation_wfmjw"]
+resource_name = "back_attack"
 length = 0.4
-loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [16, 17, 18, 19]
+}
+
+[sub_resource type="Animation" id="Animation_ffj1f"]
+resource_name = "back_death"
+length = 0.4
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -82,7 +46,23 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [0, 1]
+"values": [38, 39]
+}
+
+[sub_resource type="Animation" id="Animation_r1ic0"]
+resource_name = "back_hit"
+length = 0.2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [26, 27]
 }
 
 [sub_resource type="Animation" id="Animation_ebyhf"]
@@ -102,9 +82,9 @@ tracks/0/keys = {
 "values": [2, 3]
 }
 
-[sub_resource type="Animation" id="Animation_c86df"]
-resource_name = "side_idle"
-length = 0.4
+[sub_resource type="Animation" id="Animation_pk0av"]
+resource_name = "back_walk"
+length = 0.2
 loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -113,10 +93,10 @@ tracks/0/path = NodePath("Sprite:frame")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.2),
+"times": PackedFloat32Array(0, 0.1),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [4, 5]
+"values": [2, 3]
 }
 
 [sub_resource type="Animation" id="Animation_xmj7l"]
@@ -135,8 +115,8 @@ tracks/0/keys = {
 "values": [12, 13, 14, 15]
 }
 
-[sub_resource type="Animation" id="Animation_wfmjw"]
-resource_name = "back_attack"
+[sub_resource type="Animation" id="Animation_ugmre"]
+resource_name = "front_death"
 length = 0.4
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -145,26 +125,10 @@ tracks/0/path = NodePath("Sprite:frame")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [16, 17, 18, 19]
-}
-
-[sub_resource type="Animation" id="Animation_2f5vt"]
-resource_name = "side_attack"
-length = 0.4
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
-"update": 1,
-"values": [20, 21, 22, 23]
+"values": [36, 37]
 }
 
 [sub_resource type="Animation" id="Animation_xuurt"]
@@ -183,9 +147,27 @@ tracks/0/keys = {
 "values": [24, 25]
 }
 
-[sub_resource type="Animation" id="Animation_r1ic0"]
-resource_name = "back_hit"
+[sub_resource type="Animation" id="Animation_0e2uh"]
+resource_name = "front_idle"
+length = 0.4
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [0, 1]
+}
+
+[sub_resource type="Animation" id="Animation_mgjnd"]
+resource_name = "front_walk"
 length = 0.2
+loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -196,7 +178,39 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.1),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [26, 27]
+"values": [0, 1]
+}
+
+[sub_resource type="Animation" id="Animation_2f5vt"]
+resource_name = "side_attack"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [20, 21, 22, 23]
+}
+
+[sub_resource type="Animation" id="Animation_icf81"]
+resource_name = "side_death"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [40, 41]
 }
 
 [sub_resource type="Animation" id="Animation_jh21x"]
@@ -215,9 +229,10 @@ tracks/0/keys = {
 "values": [28, 29]
 }
 
-[sub_resource type="Animation" id="Animation_ugmre"]
-resource_name = "front_death"
+[sub_resource type="Animation" id="Animation_c86df"]
+resource_name = "side_idle"
 length = 0.4
+loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -228,12 +243,13 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [36, 37]
+"values": [4, 5]
 }
 
-[sub_resource type="Animation" id="Animation_ffj1f"]
-resource_name = "back_death"
-length = 0.4
+[sub_resource type="Animation" id="Animation_gwpec"]
+resource_name = "side_walk"
+length = 0.2
+loop_mode = 1
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -241,26 +257,10 @@ tracks/0/path = NodePath("Sprite:frame")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.2),
+"times": PackedFloat32Array(0, 0.1),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [38, 39]
-}
-
-[sub_resource type="Animation" id="Animation_icf81"]
-resource_name = "side_death"
-length = 0.4
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.2),
-"transitions": PackedFloat32Array(1, 1),
-"update": 1,
-"values": [40, 41]
+"values": [4, 5]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_0d6pk"]
@@ -284,11 +284,11 @@ _data = {
 }
 
 [node name="Bat" type="Enemy"]
-y_offset = 8.0
 health = 2
 speed = 5
 view_distance = 6
 ability_list = 1
+trait_list = 0
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
@@ -300,3 +300,5 @@ position = Vector2(8, 8)
 texture = ExtResource("2_s2rlm")
 hframes = 12
 vframes = 4
+region_enabled = true
+region_rect = Rect2(0, 0, 192, 64)

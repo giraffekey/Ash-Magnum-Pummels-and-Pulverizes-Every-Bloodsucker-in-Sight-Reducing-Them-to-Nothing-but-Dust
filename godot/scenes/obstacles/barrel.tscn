@@ -4,7 +4,7 @@
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_t5c5l"]
 atlas = ExtResource("1_2evwo")
-region = Rect2(32, 0, 16, 16)
+region = Rect2(16, 0, 16, 16)
 
 [node name="Barrel" type="Obstacle"]
 kind = 2

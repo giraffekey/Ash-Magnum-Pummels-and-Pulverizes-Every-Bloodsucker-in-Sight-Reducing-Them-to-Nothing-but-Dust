@@ -1,4 +1,7 @@
+use crate::ability::{abilities, ability_lists, Ability, DamageKind};
+use crate::dialogue::{Dialogue, DialogueEvent};
 use crate::math::{attack_positions, compute_fov, line_to, pathfind, Direction, Position};
+use crate::traits::{trait_lists, Trait};
 use crate::ui::AbilityBar;
 
 use godot::engine::{
@@ -7,99 +10,10 @@ use godot::engine::{
 use godot::global::instance_from_id;
 use godot::prelude::*;
 use std::collections::{HashMap, HashSet};
-use std::sync::OnceLock;
 
 pub const LEVEL_WIDTH: usize = 16;
 pub const LEVEL_HEIGHT: usize = 32;
 pub const TILE_SIZE: f32 = 16.0;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Ability {
-    Whip,
-    CrossbowIronBolt,
-    CrossbowSilverBolt,
-    BatBite,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum DamageKind {
-    Normal,
-    Silver,
-    Holy,
-    Fire,
-    Stake,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct AbilityStats {
-    damage_kind: DamageKind,
-    damage: u16,
-    range: u16,
-    targets_enemy: bool,
-}
-
-pub fn ability_lists() -> &'static Vec<Vec<Ability>> {
-    static ABILITY_LISTS: OnceLock<Vec<Vec<Ability>>> = OnceLock::new();
-    ABILITY_LISTS.get_or_init(|| init_ability_lists())
-}
-
-fn init_ability_lists() -> Vec<Vec<Ability>> {
-    vec![
-        vec![
-            Ability::Whip,
-            Ability::CrossbowIronBolt,
-            Ability::CrossbowSilverBolt,
-        ],
-        vec![Ability::BatBite],
-    ]
-}
-
-pub fn abilities() -> &'static HashMap<Ability, AbilityStats> {
-    static ABILITIES: OnceLock<HashMap<Ability, AbilityStats>> = OnceLock::new();
-    ABILITIES.get_or_init(|| init_abilities())
-}
-
-fn init_abilities() -> HashMap<Ability, AbilityStats> {
-    [
-        (
-            Ability::Whip,
-            AbilityStats {
-                damage_kind: DamageKind::Silver,
-                damage: 2,
-                range: 2,
-                targets_enemy: true,
-            },
-        ),
-        (
-            Ability::CrossbowIronBolt,
-            AbilityStats {
-                damage_kind: DamageKind::Normal,
-                damage: 2,
-                range: 4,
-                targets_enemy: true,
-            },
-        ),
-        (
-            Ability::CrossbowSilverBolt,
-            AbilityStats {
-                damage_kind: DamageKind::Silver,
-                damage: 2,
-                range: 4,
-                targets_enemy: true,
-            },
-        ),
-        (
-            Ability::BatBite,
-            AbilityStats {
-                damage_kind: DamageKind::Normal,
-                damage: 1,
-                range: 1,
-                targets_enemy: true,
-            },
-        ),
-    ]
-    .into()
-}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, GodotConvert, Var, Export)]
 #[godot(via = u8)]
@@ -123,6 +37,10 @@ pub struct Ally {
     #[export]
     pub ability_list: u8,
     pub abilities: Vec<Ability>,
+    pub uses: HashMap<Ability, u16>,
+    #[export]
+    pub trait_list: u8,
+    pub traits: Vec<Trait>,
     pub selected_ability: usize,
     pub has_moved: bool,
     pub has_acted: bool,
@@ -144,7 +62,17 @@ impl INode2D for Ally {
             Callable::from_object_method(&self.base(), "animation_end"),
         );
 
-        self.abilities = ability_lists()[self.ability_list as usize].clone();
+        let ability_list = ability_lists()[self.ability_list as usize].clone();
+        for (ability, uses) in &ability_list {
+            self.uses.insert(*ability, *uses);
+        }
+        self.abilities = ability_list
+            .iter()
+            .map(|(ability, _)| ability)
+            .copied()
+            .collect();
+
+        self.traits = trait_lists()[self.trait_list as usize].clone();
     }
 
     fn process(&mut self, _delta: f64) {
@@ -182,7 +110,6 @@ impl Ally {
                     .get_node_as::<Cursor>("../../../CursorLayer/Cursor");
                 let mut cursor = cursor.bind_mut();
                 cursor.can_interact = true;
-                cursor.selected = None;
             }
             _ => (),
         }
@@ -204,7 +131,7 @@ impl Ally {
                     self.base().clone().upcast(),
                     "position".into(),
                     Variant::from(position.to_vector()),
-                    0.2,
+                    0.3,
                 );
                 tween.tween_callback(Callable::from_object_method(&self.base(), "next_position"));
 
@@ -243,12 +170,49 @@ impl Ally {
                     _ => unreachable!(),
                 }
 
+                let mut level = self.base().get_node_as::<Level>("../../..");
+                let mut level = level.bind_mut();
+
+                match level.at(self.position) {
+                    Tile::Item(id) => {
+                        let mut item = level.get_item(id);
+
+                        {
+                            let item = item.bind();
+                            let ability = match item.kind {
+                                ItemKind::IronBolt => Ability::CrossbowIronBolt,
+                                ItemKind::SilverBolt => Ability::CrossbowSilverBolt,
+                                ItemKind::WoodenStake => Ability::WoodenStake,
+                            };
+                            match self.uses.get_mut(&ability) {
+                                Some(n) => *n += 1,
+                                None => {
+                                    self.abilities.push(ability);
+                                    self.uses.insert(ability, 1);
+                                }
+                            }
+                            level.items.remove(&id);
+                        }
+
+                        item.queue_free();
+                    }
+                    _ => (),
+                }
+
+                level.grid[self.position.x][self.position.y] = Tile::Ally(self.id);
+
                 let mut cursor = self
                     .base()
                     .get_node_as::<Cursor>("../../../CursorLayer/Cursor");
                 let mut cursor = cursor.bind_mut();
                 cursor.can_interact = true;
                 cursor.acting = true;
+
+                let mut ability_bar = self
+                    .base()
+                    .get_node_as::<AbilityBar>("../../../UILayer/AbilityBar");
+                let mut ability_bar = ability_bar.bind_mut();
+                ability_bar.select_ally(&self);
             }
             None => (),
         }
@@ -272,8 +236,24 @@ impl Ally {
     }
 
     pub fn use_ability(&mut self, position: Position) {
-        match self.current_ability() {
-            Ability::Whip => match self.position.direction_to(position) {
+        let ability = *self.current_ability();
+        let stats = abilities().get(&ability).unwrap();
+        if stats.consumable {
+            let uses = self.uses.get_mut(&ability).unwrap();
+            *uses -= 1;
+
+            if *uses == 0 {
+                self.abilities.remove(self.selected_ability);
+                self.uses.remove(&ability);
+
+                if self.selected_ability >= self.abilities.len() {
+                    self.selected_ability = self.abilities.len() - 1;
+                }
+            }
+        }
+
+        match ability {
+            Ability::Whip | Ability::WoodenStake => match self.position.direction_to(position) {
                 Direction::Left => {
                     self.animation = "side_whip".into();
                     self.flip_h(true);
@@ -315,7 +295,15 @@ impl Ally {
         }
     }
 
-    pub fn hit(&mut self, damage: u16) {
+    pub fn hit(&mut self, mut damage: u16, damage_kind: DamageKind) {
+        for trait_ in &self.traits {
+            match trait_ {
+                Trait::SilverVulnerable if damage_kind == DamageKind::Silver => damage += 1,
+                Trait::HolyVulnerable if damage_kind == DamageKind::Holy => damage += 2,
+                Trait::StakeVulnerable if damage_kind == DamageKind::Stake => damage += 1_000,
+                _ => (),
+            }
+        }
         self.health = self.health.checked_sub(damage).unwrap_or(0);
 
         if self.health == 0 {
@@ -338,13 +326,21 @@ impl Ally {
 
 pub type EnemyId = u16;
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Var, Export, GodotConvert)]
+#[godot(via = u8)]
+pub enum EnemyKind {
+    #[default]
+    Bat,
+    Vampire,
+}
+
 #[derive(GodotClass)]
 #[class(init, base=Node2D)]
 pub struct Enemy {
     pub id: EnemyId,
     pub position: Position,
     #[export]
-    pub y_offset: f32,
+    pub kind: EnemyKind,
     #[export]
     pub health: u16,
     #[export]
@@ -354,6 +350,10 @@ pub struct Enemy {
     #[export]
     pub ability_list: u8,
     pub abilities: Vec<Ability>,
+    pub uses: HashMap<Ability, u16>,
+    #[export]
+    pub trait_list: u8,
+    pub traits: Vec<Trait>,
     path: Option<Vec<Position>>,
     index: usize,
     current_ability: Option<(AllyId, Ability)>,
@@ -374,7 +374,17 @@ impl INode2D for Enemy {
             Callable::from_object_method(&self.base(), "animation_end"),
         );
 
-        self.abilities = ability_lists()[self.ability_list as usize].clone();
+        let ability_list = ability_lists()[self.ability_list as usize].clone();
+        for (ability, uses) in &ability_list {
+            self.uses.insert(*ability, *uses);
+        }
+        self.abilities = ability_list
+            .iter()
+            .map(|(ability, _)| ability)
+            .copied()
+            .collect();
+
+        self.traits = trait_lists()[self.trait_list as usize].clone();
     }
 
     fn process(&mut self, _delta: f64) {
@@ -410,6 +420,10 @@ impl Enemy {
                     .unwrap();
                 level.turn_order.remove(i);
 
+                let mut dialogue = self.base().get_node_as::<Dialogue>("../../../Dialogue");
+                let mut dialogue = dialogue.bind_mut();
+                dialogue.push_event(DialogueEvent::EnemyKilled(self.kind));
+
                 self.base_mut().queue_free();
             }
             _ => (),
@@ -436,7 +450,7 @@ impl Enemy {
                     self.base().clone().upcast(),
                     "position".into(),
                     Variant::from(position.to_vector()),
-                    0.2,
+                    0.3,
                 );
                 tween.tween_callback(Callable::from_object_method(&self.base(), "next_position"));
 
@@ -486,11 +500,15 @@ impl Enemy {
                     let mut ally = ally.bind_mut();
 
                     let stats = abilities().get(&ability).unwrap();
-                    ally.hit(stats.damage);
+                    ally.hit(stats.damage, stats.damage_kind);
 
                     self.use_ability(ability, ally.position);
                     self.current_ability = None;
                 }
+
+                let mut dialogue = self.base().get_node_as::<Dialogue>("../../../Dialogue");
+                let mut dialogue = dialogue.bind_mut();
+                dialogue.push_event(DialogueEvent::EnemyMoved(self.kind));
             }
             None => (),
         }
@@ -583,30 +601,53 @@ impl Enemy {
     }
 
     pub fn use_ability(&mut self, ability: Ability, position: Position) {
+        let stats = abilities().get(&ability).unwrap();
+        if stats.consumable {
+            let uses = self.uses.get_mut(&ability).unwrap();
+            *uses -= 1;
+
+            if *uses == 0 {
+                self.uses.remove(&ability);
+
+                let i = self.abilities.iter().position(|a| *a == ability).unwrap();
+                self.abilities.remove(i);
+            }
+        }
+
         match ability {
-            Ability::BatBite => match self.position.direction_to(position) {
-                Direction::Left => {
-                    self.animation = "side_attack".into();
-                    self.flip_h(true);
+            Ability::BatBite | Ability::VampireScratch => {
+                match self.position.direction_to(position) {
+                    Direction::Left => {
+                        self.animation = "side_attack".into();
+                        self.flip_h(true);
+                    }
+                    Direction::Right => {
+                        self.animation = "side_attack".into();
+                        self.flip_h(false);
+                    }
+                    Direction::Up => {
+                        self.animation = "back_attack".into();
+                        self.flip_h(false);
+                    }
+                    Direction::Down => {
+                        self.animation = "front_attack".into();
+                        self.flip_h(false);
+                    }
                 }
-                Direction::Right => {
-                    self.animation = "side_attack".into();
-                    self.flip_h(false);
-                }
-                Direction::Up => {
-                    self.animation = "back_attack".into();
-                    self.flip_h(false);
-                }
-                Direction::Down => {
-                    self.animation = "front_attack".into();
-                    self.flip_h(false);
-                }
-            },
+            }
             _ => unreachable!(),
         }
     }
 
-    pub fn hit(&mut self, damage: u16) {
+    pub fn hit(&mut self, mut damage: u16, damage_kind: DamageKind) {
+        for trait_ in &self.traits {
+            match trait_ {
+                Trait::SilverVulnerable if damage_kind == DamageKind::Silver => damage += 1,
+                Trait::HolyVulnerable if damage_kind == DamageKind::Holy => damage += 2,
+                Trait::StakeVulnerable if damage_kind == DamageKind::Stake => damage += 1_000,
+                _ => (),
+            }
+        }
         self.health = self.health.checked_sub(damage).unwrap_or(0);
 
         if self.health == 0 {
@@ -647,13 +688,35 @@ pub struct Obstacle {
     base: Base<Node2D>,
 }
 
+pub type ItemId = u16;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, GodotConvert, Var, Export)]
+#[godot(via = u8)]
+pub enum ItemKind {
+    #[default]
+    IronBolt,
+    SilverBolt,
+    WoodenStake,
+}
+
+#[derive(GodotClass)]
+#[class(init, base=Node2D)]
+pub struct Item {
+    pub id: ItemId,
+    pub position: Position,
+    #[export]
+    pub kind: ItemKind,
+    base: Base<Node2D>,
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 pub enum Tile {
     #[default]
     Empty,
     Ally(AllyId),
     Enemy(EnemyId),
-    Obstacle(ObstacleKind),
+    Obstacle(ObstacleId),
+    Item(ItemId),
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -672,6 +735,7 @@ pub struct Level {
     pub allies: HashMap<AllyId, i64>,
     pub enemies: HashMap<EnemyId, i64>,
     pub obstacles: HashMap<ObstacleId, i64>,
+    pub items: HashMap<ItemId, i64>,
     pub shadows_cast: bool,
     base: Base<Node2D>,
 }
@@ -731,82 +795,135 @@ impl INode2D for Level {
 
             let mut obstacle = obstacle.bind_mut();
             obstacle.position = position;
-            self.grid[position.x][position.y] = Tile::Obstacle(obstacle.kind);
+            self.grid[position.x][position.y] = Tile::Obstacle(obstacle_id);
 
             obstacle.id = obstacle_id;
             obstacle_id += 1;
         }
+
+        let items = self.base().get_node_as::<CanvasLayer>("ItemLayer");
+        let mut item_id = 0;
+        for child in items.get_children().iter_shared() {
+            let mut item: Gd<Item> = child.cast();
+            let position = Position::from_vector(item.get_position());
+            self.items.insert(item_id, item.instance_id().to_i64());
+
+            let mut item = item.bind_mut();
+            item.position = position;
+            self.grid[position.x][position.y] = Tile::Item(item_id);
+
+            item.id = item_id;
+            item_id += 1;
+        }
+
+        let mut dialogue = self.base().get_node_as::<Dialogue>("Dialogue");
+        let mut dialogue = dialogue.bind_mut();
+        dialogue.push_event(DialogueEvent::LevelReady);
     }
 
     fn process(&mut self, _delta: f64) {
-        match self.turn {
-            Turn::Ally => {
-                if !self.shadows_cast {
-                    self.cast_shadows();
-                    self.shadows_cast = true;
-                }
+        let dialogue = self.base().get_node_as::<Dialogue>("Dialogue");
+        let dialogue = dialogue.bind();
 
-                let input = Input::singleton();
-                if input.is_action_just_pressed("skip".into()) {
-                    self.turn = Turn::Enemy(0, false);
-                } else {
-                    let all_acted = self.allies.keys().all(|ally_id| {
-                        let ally = self.get_ally(*ally_id);
-                        let ally = ally.bind();
-                        ally.has_acted
-                    });
-                    if all_acted {
+        if !dialogue.active {
+            match self.turn {
+                Turn::Ally => {
+                    if !self.shadows_cast {
+                        self.cast_shadows();
+                        self.shadows_cast = true;
+                    }
+
+                    let input = Input::singleton();
+                    if input.is_action_just_pressed("skip".into()) {
                         self.turn = Turn::Enemy(0, false);
+                    } else {
+                        let all_acted = self.allies.keys().all(|ally_id| {
+                            let ally = self.get_ally(*ally_id);
+                            let ally = ally.bind();
+                            ally.has_acted
+                        });
+                        if all_acted {
+                            self.turn = Turn::Enemy(0, false);
+                        }
                     }
                 }
-            }
-            Turn::Enemy(i, waiting) => {
-                if !waiting {
-                    if i < self.turn_order.len() {
-                        let enemy_id = self.turn_order[i];
-                        let mut enemy = self.get_enemy(enemy_id);
-                        let mut enemy = enemy.bind_mut();
+                Turn::Enemy(i, waiting) => {
+                    if waiting {
+                        if i < self.turn_order.len() {
+                            let cursor = self.base().get_node_as::<Cursor>("CursorLayer/Cursor");
+                            let mut camera = cursor.get_node_as::<Camera2D>("Camera");
 
-                        match enemy.animation.as_str() {
-                            "side_death" | "front_death" | "back_death" => (),
-                            _ => {
-                                let (path, ability) = enemy.plan(self.grid, &self.allies);
+                            let enemy_id = self.turn_order[i];
+                            let enemy = self.get_enemy(enemy_id);
 
-                                if let Some(path) = path {
-                                    let position = path.last().unwrap();
-                                    self.grid[enemy.position.x][enemy.position.y] = Tile::Empty;
-                                    self.grid[position.x][position.y] = Tile::Enemy(enemy_id);
-                                    enemy.follow_path(path);
-
-                                    if let Some((ability, ally_id)) = ability {
-                                        enemy.current_ability = Some((ally_id, ability));
-                                    }
-
-                                    self.turn = Turn::Enemy(i, true);
-                                } else {
-                                    self.turn = Turn::Enemy(i + 1, false);
-                                }
-                            }
+                            camera.set_position_smoothing_enabled(true);
+                            camera.set_position_smoothing_speed(8.0);
+                            camera.set_position(enemy.get_position() - cursor.get_position());
                         }
                     } else {
-                        self.turn = Turn::Ally;
-                        self.shadows_cast = false;
+                        if i == 0 {
+                            let mut cursor =
+                                self.base().get_node_as::<Cursor>("CursorLayer/Cursor");
+                            let mut cursor = cursor.bind_mut();
+                            cursor.acting = false;
+                            cursor.selected = None;
 
-                        for ally_id in self.allies.keys() {
-                            let mut ally = self.get_ally(*ally_id);
-                            let mut ally = ally.bind_mut();
-                            ally.has_moved = false;
-                            ally.has_acted = false;
+                            let path = self.base().get_node_as::<Path>("PathLayer/Path");
+                            let path = path.bind();
+                            path.clear_path();
+
+                            let mut ability_bar =
+                                self.base().get_node_as::<AbilityBar>("UILayer/AbilityBar");
+                            let mut ability_bar = ability_bar.bind_mut();
+                            ability_bar.select_none();
                         }
 
-                        let mut cursor = self.base().get_node_as::<Cursor>("CursorLayer/Cursor");
-                        let mut cursor = cursor.bind_mut();
-                        cursor.acting = false;
-                        cursor.selected = None;
+                        if i < self.turn_order.len() {
+                            let enemy_id = self.turn_order[i];
+                            let mut enemy = self.get_enemy(enemy_id);
+                            let mut enemy = enemy.bind_mut();
+                            match enemy.animation.as_str() {
+                                "side_death" | "front_death" | "back_death" => (),
+                                _ => {
+                                    let (path, ability) = enemy.plan(self.grid, &self.allies);
 
-                        let path = self.base().get_node_as::<Path>("PathLayer/Path");
-                        let path = path.bind();
-                        path.clear_path();
+                                    if let Some(path) = path {
+                                        let position = path.last().unwrap();
+                                        self.grid[enemy.position.x][enemy.position.y] = Tile::Empty;
+                                        self.grid[position.x][position.y] = Tile::Enemy(enemy_id);
+                                        enemy.follow_path(path);
+
+                                        if let Some((ability, ally_id)) = ability {
+                                            enemy.current_ability = Some((ally_id, ability));
+                                        }
+
+                                        self.turn = Turn::Enemy(i, true);
+                                    } else {
+                                        self.turn = Turn::Enemy(i + 1, false);
+                                    }
+                                }
+                            }
+                        } else {
+                            self.turn = Turn::Ally;
+                            self.shadows_cast = false;
+
+                            for ally_id in self.allies.keys() {
+                                let mut ally = self.get_ally(*ally_id);
+                                let mut ally = ally.bind_mut();
+                                ally.has_moved = false;
+                                ally.has_acted = false;
+                            }
+
+                            let path = self.base().get_node_as::<Path>("PathLayer/Path");
+                            let path = path.bind();
+                            path.clear_path();
+
+                            let mut camera = self
+                                .base()
+                                .get_node_as::<Camera2D>("CursorLayer/Cursor/Camera");
+                            camera.set_position_smoothing_enabled(false);
+                            camera.set_position(Vector2::default());
+                        }
                     }
                 }
             }
@@ -831,6 +948,11 @@ impl Level {
 
     pub fn get_obstacle(&self, obstacle_id: ObstacleId) -> Gd<Obstacle> {
         let instance_id = *self.obstacles.get(&obstacle_id).unwrap();
+        instance_from_id(instance_id).unwrap().cast()
+    }
+
+    pub fn get_item(&self, item_id: ItemId) -> Gd<Item> {
+        let instance_id = *self.items.get(&item_id).unwrap();
         instance_from_id(instance_id).unwrap().cast()
     }
 
@@ -860,6 +982,12 @@ impl Level {
             obstacle.set_visible(visible.contains(&position));
         }
 
+        for item_id in self.items.keys() {
+            let mut item = self.get_item(*item_id);
+            let position = item.bind().position;
+            item.set_visible(visible.contains(&position));
+        }
+
         let mut shadow_map = self
             .base()
             .get_node_as::<ShadowMap>("ShadowLayer/ShadowMap");
@@ -874,7 +1002,6 @@ impl Level {
             match pathfind(ally.position, position, self.grid) {
                 Some(path) if !path.is_empty() && path.len() as u16 <= ally.speed => {
                     self.grid[ally.position.x][ally.position.y] = Tile::Empty;
-                    self.grid[position.x][position.y] = Tile::Ally(ally_id);
                     ally.follow_path(path);
                     return true;
                 }
@@ -895,7 +1022,7 @@ impl Level {
             match line_to(ally.position, enemy.position, self.grid) {
                 Some(path) if path.len() as u16 <= stats.range => {
                     ally.use_ability(enemy.position);
-                    enemy.hit(stats.damage);
+                    enemy.hit(stats.damage, stats.damage_kind);
                     return true;
                 }
                 _ => (),
@@ -949,12 +1076,20 @@ impl ISprite2D for Cursor {
     fn process(&mut self, _delta: f64) {
         let mut level = self.base().get_node_as::<Level>("../..");
         let mut level = level.bind_mut();
+
+        let dialogue = self.base().get_node_as::<Dialogue>("../../Dialogue");
+        let dialogue = dialogue.bind();
+
         let mut ability_bar = self
             .base()
             .get_node_as::<AbilityBar>("../../UILayer/AbilityBar");
         let mut ability_bar = ability_bar.bind_mut();
 
-        if self.can_interact && level.turn == Turn::Ally && ability_bar.hovered.is_none() {
+        if self.can_interact
+            && level.turn == Turn::Ally
+            && !dialogue.active
+            && ability_bar.hovered.is_none()
+        {
             let input = Input::singleton();
 
             let shadow_map = self
@@ -1023,7 +1158,7 @@ impl ISprite2D for Cursor {
 
             if input.is_action_just_pressed("select".into()) {
                 match level.at(self.position) {
-                    Tile::Empty if !self.acting => {
+                    Tile::Empty | Tile::Item(_) if !self.acting => {
                         if let Some(selected) = self.selected {
                             if level.move_ally(selected, self.position) {
                                 path_node.clear_path();
@@ -1034,15 +1169,13 @@ impl ISprite2D for Cursor {
                     Tile::Ally(id) => {
                         self.selected = Some(id);
 
-                        {
-                            let ally = level.get_ally(id);
-                            let ally = ally.bind();
-                            if ally.has_moved {
-                                self.acting = true;
-                            }
+                        let ally = level.get_ally(id);
+                        let ally = ally.bind();
+                        if ally.has_moved {
+                            self.acting = true;
                         }
 
-                        ability_bar.select_ally(&level, id);
+                        ability_bar.select_ally(&ally);
                     }
                     Tile::Enemy(id) if self.acting => {
                         if let Some(selected) = self.selected {
@@ -1057,7 +1190,7 @@ impl ISprite2D for Cursor {
                 }
             } else {
                 match level.at(self.position) {
-                    Tile::Empty => {
+                    Tile::Empty | Tile::Item(_) => {
                         if let Some(selected) = self.selected {
                             let ally = level.get_ally(selected);
                             let ally = ally.bind();

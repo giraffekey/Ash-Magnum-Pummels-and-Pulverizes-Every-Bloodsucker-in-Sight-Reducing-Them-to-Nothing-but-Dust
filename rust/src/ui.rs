@@ -1,4 +1,6 @@
-use crate::level::{Ability, AllyId, Level};
+use crate::ability::Ability;
+use crate::dialogue::Dialogue;
+use crate::level::{Ally, AllyId, Level};
 
 use godot::engine::{AtlasTexture, HBoxContainer, IHBoxContainer, TextureRect};
 use godot::prelude::*;
@@ -17,6 +19,13 @@ pub struct AbilityBar {
 #[godot_api]
 impl IHBoxContainer for AbilityBar {
     fn process(&mut self, _delta: f64) {
+        let dialogue = self.base().get_node_as::<Dialogue>("../../Dialogue");
+        let dialogue = dialogue.bind();
+
+        if dialogue.active {
+            return;
+        }
+
         if let Some(selected) = self.selected {
             let input = Input::singleton();
 
@@ -25,7 +34,9 @@ impl IHBoxContainer for AbilityBar {
             let mut ally = level.get_ally(selected);
             let mut ally = ally.bind_mut();
 
-            if input.is_action_just_pressed("choose".into()) {
+            let toggled = input.is_action_just_pressed("choose".into())
+                || input.is_action_just_pressed("select".into()) && self.hovered.is_some();
+            if toggled {
                 match self.hovered {
                     Some(i) => {
                         self.hovered = None;
@@ -53,38 +64,42 @@ impl IHBoxContainer for AbilityBar {
 
             match self.hovered {
                 Some(i) => {
-                    if input.is_action_just_pressed("left".into()) && i > 0 {
+                    if input.is_action_just_pressed("left".into()) {
                         let mut icon = self
                             .base()
                             .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
                         let mut icon = icon.bind_mut();
                         icon.set_hovered(false);
 
+                        let i = if i > 0 { i - 1 } else { self.length - 1 };
+
                         let mut icon = self
                             .base()
-                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i - 1));
+                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
                         let mut icon = icon.bind_mut();
                         icon.set_hovered(true);
 
-                        ally.selected_ability -= 1;
-                        self.hovered = Some(i - 1);
+                        ally.selected_ability = i;
+                        self.hovered = Some(i);
                     }
 
-                    if input.is_action_just_pressed("right".into()) && i < self.length - 1 {
+                    if input.is_action_just_pressed("right".into()) {
                         let mut icon = self
                             .base()
                             .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
                         let mut icon = icon.bind_mut();
                         icon.set_hovered(false);
 
+                        let i = if i < self.length - 1 { i + 1 } else { 0 };
+
                         let mut icon = self
                             .base()
-                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i + 1));
+                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
                         let mut icon = icon.bind_mut();
                         icon.set_hovered(true);
 
-                        ally.selected_ability += 1;
-                        self.hovered = Some(i + 1);
+                        ally.selected_ability = i;
+                        self.hovered = Some(i);
                     }
                 }
                 None => (),
@@ -94,9 +109,7 @@ impl IHBoxContainer for AbilityBar {
 }
 
 impl AbilityBar {
-    pub fn select_ally(&mut self, level: &Level, id: AllyId) {
-        let ally = level.get_ally(id);
-        let ally = ally.bind();
+    pub fn select_ally(&mut self, ally: &Ally) {
         for i in 0..NUM_ICONS {
             let mut icon = self
                 .base()
@@ -109,7 +122,22 @@ impl AbilityBar {
             }
         }
         self.length = ally.abilities.len();
-        self.selected = Some(id);
+        self.selected = Some(ally.id);
+    }
+
+    pub fn select_none(&mut self) {
+        for i in 0..NUM_ICONS {
+            let mut icon = self
+                .base()
+                .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
+            let mut icon = icon.bind_mut();
+            icon.set_ability(None);
+            icon.set_selected(false);
+            icon.set_hovered(false);
+        }
+        self.length = 0;
+        self.selected = None;
+        self.hovered = None;
     }
 }
 
@@ -157,6 +185,7 @@ impl AbilityIcon {
                     Ability::Whip => Vector2::new(0.0, y),
                     Ability::CrossbowIronBolt => Vector2::new(24.0, y),
                     Ability::CrossbowSilverBolt => Vector2::new(48.0, y),
+                    Ability::WoodenStake => Vector2::new(72.0, y),
                     _ => unreachable!(),
                 };
                 atlas.set_region(Rect2::new(position, Vector2::new(24.0, 24.0)));

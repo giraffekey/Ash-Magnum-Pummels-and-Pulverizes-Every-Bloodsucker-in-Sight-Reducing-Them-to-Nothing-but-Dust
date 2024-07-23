@@ -178,7 +178,7 @@ pub fn pathfind(
 
         for adjacent in &position.adjacent() {
             match grid[adjacent.x][adjacent.y] {
-                Tile::Empty => (),
+                Tile::Empty | Tile::Item(_) => (),
                 Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => continue,
             }
 
@@ -234,7 +234,7 @@ pub fn line_to(
             }
 
             match grid[position.x][position.y] {
-                Tile::Empty => path.push(position),
+                Tile::Empty | Tile::Item(_) => path.push(position),
                 Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
             }
         }
@@ -256,7 +256,7 @@ pub fn attack_positions(
             };
 
             match grid[position.x][position.y] {
-                Tile::Empty => positions.push((position, dist)),
+                Tile::Empty | Tile::Item(_) => positions.push((position, dist)),
                 Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
             }
         }
