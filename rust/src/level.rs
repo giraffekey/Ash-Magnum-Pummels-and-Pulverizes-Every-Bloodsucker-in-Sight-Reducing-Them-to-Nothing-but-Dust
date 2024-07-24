@@ -2,7 +2,7 @@ use crate::ability::{abilities, ability_lists, Ability, DamageKind};
 use crate::dialogue::{Dialogue, DialogueEvent};
 use crate::math::{attack_positions, compute_fov, line_to, pathfind, Direction, Position};
 use crate::traits::{trait_lists, Trait};
-use crate::ui::AbilityBar;
+use crate::ui::{AbilityBar, InfoPanel};
 
 use godot::engine::{
     AnimationPlayer, AtlasTexture, CanvasLayer, ISprite2D, Sprite2D, Texture2D, TileMap,
@@ -20,6 +20,14 @@ pub const TILE_SIZE: f32 = 16.0;
 pub enum AllyId {
     #[default]
     AshMagnum,
+}
+
+impl AllyId {
+    pub fn name(&self) -> String {
+        match self {
+            Self::AshMagnum => "Ash Magnum".into(),
+        }
+    }
 }
 
 #[derive(GodotClass)]
@@ -179,11 +187,7 @@ impl Ally {
 
                         {
                             let item = item.bind();
-                            let ability = match item.kind {
-                                ItemKind::IronBolt => Ability::CrossbowIronBolt,
-                                ItemKind::SilverBolt => Ability::CrossbowSilverBolt,
-                                ItemKind::WoodenStake => Ability::WoodenStake,
-                            };
+                            let ability = item.ability();
                             match self.uses.get_mut(&ability) {
                                 Some(n) => *n += 1,
                                 None => {
@@ -220,6 +224,10 @@ impl Ally {
 }
 
 impl Ally {
+    pub fn name(&self) -> String {
+        self.id.name()
+    }
+
     pub fn current_ability(&self) -> &Ability {
         &self.abilities[self.selected_ability]
     }
@@ -332,6 +340,15 @@ pub enum EnemyKind {
     #[default]
     Bat,
     Vampire,
+}
+
+impl EnemyKind {
+    pub fn name(&self) -> String {
+        match self {
+            Self::Bat => "Bat".into(),
+            Self::Vampire => "Vampire".into(),
+        }
+    }
 }
 
 #[derive(GodotClass)]
@@ -516,6 +533,10 @@ impl Enemy {
 }
 
 impl Enemy {
+    pub fn name(&self) -> String {
+        self.kind.name()
+    }
+
     pub fn plan(
         &mut self,
         grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
@@ -709,6 +730,24 @@ pub struct Item {
     base: Base<Node2D>,
 }
 
+impl Item {
+    pub fn name(&self) -> String {
+        match self.kind {
+            ItemKind::IronBolt => "Iron Bolt".into(),
+            ItemKind::SilverBolt => "Silver Bolt".into(),
+            ItemKind::WoodenStake => "Wooden Stake".into(),
+        }
+    }
+
+    pub fn ability(&self) -> Ability {
+        match self.kind {
+            ItemKind::IronBolt => Ability::CrossbowIronBolt,
+            ItemKind::SilverBolt => Ability::CrossbowSilverBolt,
+            ItemKind::WoodenStake => Ability::WoodenStake,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 pub enum Tile {
     #[default]
@@ -760,6 +799,12 @@ impl INode2D for Level {
                     cursor.set_position(position.to_vector() + Vector2::new(8.0, 8.0));
                     let mut cursor = cursor.bind_mut();
                     cursor.position = position;
+
+                    let id = ally.id;
+                    drop(ally);
+                    let mut info_panel = self.base().get_node_as::<InfoPanel>("UILayer/InfoPanel");
+                    let mut info_panel = info_panel.bind_mut();
+                    info_panel.select_ally(id, self);
                 }
             }
         }
@@ -871,6 +916,12 @@ impl INode2D for Level {
                             let path = self.base().get_node_as::<Path>("PathLayer/Path");
                             let path = path.bind();
                             path.clear_path();
+
+                            let mut info_panel =
+                                self.base().get_node_as::<InfoPanel>("UILayer/InfoPanel");
+                            let mut info_panel = info_panel.bind_mut();
+                            info_panel.deselect_tile();
+                            info_panel.deselect_ability(self);
 
                             let mut ability_bar =
                                 self.base().get_node_as::<AbilityBar>("UILayer/AbilityBar");
@@ -1029,6 +1080,10 @@ impl Level {
             }
         }
 
+        let mut info_panel = self.base().get_node_as::<InfoPanel>("UILayer/InfoPanel");
+        let mut info_panel = info_panel.bind_mut();
+        info_panel.deselect_tile();
+
         false
     }
 }
@@ -1098,6 +1153,7 @@ impl ISprite2D for Cursor {
             let shadow_map = shadow_map.bind();
 
             let mut position = self.base().get_position();
+            let last_position = self.position;
             if input.is_action_just_pressed("left".into()) {
                 let last = self.position;
                 if self.move_in_direction(Direction::Left) {
@@ -1230,6 +1286,21 @@ impl ISprite2D for Cursor {
                         }
                     }
                     _ => path_node.clear_path(),
+                }
+
+                if last_position != self.position {
+                    let mut info_panel = self
+                        .base()
+                        .get_node_as::<InfoPanel>("../../UILayer/InfoPanel");
+                    let mut info_panel = info_panel.bind_mut();
+
+                    match level.at(self.position) {
+                        Tile::Empty => info_panel.deselect_tile(),
+                        Tile::Ally(ally_id) => info_panel.select_ally(ally_id, &level),
+                        Tile::Enemy(enemy_id) => info_panel.select_enemy(enemy_id, &level),
+                        Tile::Item(item_id) => info_panel.select_item(item_id, &level),
+                        Tile::Obstacle(_) => (),
+                    }
                 }
 
                 let mut atlas: Gd<AtlasTexture> = self.base().get_texture().unwrap().cast();

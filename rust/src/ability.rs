@@ -20,8 +20,9 @@ pub enum DamageKind {
     Stake,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct AbilityStats {
+    pub name: String,
     pub damage_kind: DamageKind,
     pub damage: u16,
     pub range: u16,
@@ -56,6 +57,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
         (
             Ability::Whip,
             AbilityStats {
+                name: "Whip".into(),
                 damage_kind: DamageKind::Silver,
                 damage: 2,
                 range: 2,
@@ -66,6 +68,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
         (
             Ability::CrossbowIronBolt,
             AbilityStats {
+                name: "Crossbow (Iron Bolts)".into(),
                 damage_kind: DamageKind::Normal,
                 damage: 2,
                 range: 6,
@@ -76,6 +79,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
         (
             Ability::CrossbowSilverBolt,
             AbilityStats {
+                name: "Crossbow (Silver Bolts)".into(),
                 damage_kind: DamageKind::Silver,
                 damage: 2,
                 range: 6,
@@ -86,6 +90,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
         (
             Ability::WoodenStake,
             AbilityStats {
+                name: "Wooden Stake".into(),
                 damage_kind: DamageKind::Stake,
                 damage: 1,
                 range: 1,
@@ -96,6 +101,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
         (
             Ability::BatBite,
             AbilityStats {
+                name: "Bat Bite".into(),
                 damage_kind: DamageKind::Normal,
                 damage: 1,
                 range: 1,
@@ -106,6 +112,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
         (
             Ability::VampireScratch,
             AbilityStats {
+                name: "Vampire Scratch".into(),
                 damage_kind: DamageKind::Normal,
                 damage: 2,
                 range: 1,

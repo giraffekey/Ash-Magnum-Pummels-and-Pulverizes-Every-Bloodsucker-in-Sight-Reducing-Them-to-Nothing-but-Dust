@@ -1,0 +1,39 @@
+[gd_scene load_steps=2 format=3 uid="uid://c6oipflcoskb2"]
+
+[ext_resource type="Texture2D" uid="uid://dc4yf8qfa5j1o" path="res://assets/sprites/info-panel.png" id="1_gsu1g"]
+
+[node name="InfoPanel" type="InfoPanel"]
+offset_right = 40.0
+offset_bottom = 30.0
+texture = ExtResource("1_gsu1g")
+
+[node name="Info" type="VBoxContainer" parent="."]
+layout_mode = 2
+offset_left = 4.0
+offset_top = 8.0
+offset_right = 156.0
+offset_bottom = 312.0
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="Stats1" type="Label" parent="Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Stats2" type="Label" parent="Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Stats3" type="Label" parent="Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+autowrap_mode = 2

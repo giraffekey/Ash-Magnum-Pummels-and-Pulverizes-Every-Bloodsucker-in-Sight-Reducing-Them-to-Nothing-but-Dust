@@ -1,11 +1,176 @@
-use crate::ability::Ability;
+use crate::ability::{abilities, Ability, DamageKind};
 use crate::dialogue::Dialogue;
-use crate::level::{Ally, AllyId, Level};
+use crate::level::{Ally, AllyId, EnemyId, ItemId, ItemKind, Level};
+use crate::traits::Trait;
 
-use godot::engine::{AtlasTexture, HBoxContainer, IHBoxContainer, TextureRect};
+use godot::engine::{AtlasTexture, HBoxContainer, IHBoxContainer, Label, TextureRect};
 use godot::prelude::*;
 
-const NUM_ICONS: usize = 9;
+#[derive(GodotClass)]
+#[class(init, base=TextureRect)]
+pub struct InfoPanel {
+    pub selected_ally: Option<AllyId>,
+    pub selected_enemy: Option<EnemyId>,
+    pub selected_item: Option<ItemId>,
+    pub selected_ability: Option<Ability>,
+    base: Base<TextureRect>,
+}
+
+impl InfoPanel {
+    pub fn clear_info(&mut self) {
+        let mut title = self.base().get_node_as::<Label>("Info/Title");
+        title.set_text("".into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
+        stats_text.set_text("".into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
+        stats_text.set_text("".into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats3");
+        stats_text.set_text("".into());
+
+        self.base_mut().set_visible(false);
+    }
+
+    pub fn select_ally(&mut self, ally_id: AllyId, level: &Level) {
+        let ally = level.get_ally(ally_id);
+        let ally = ally.bind();
+
+        let mut title = self.base().get_node_as::<Label>("Info/Title");
+        title.set_text(ally.name().into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
+        stats_text.set_text(format!("{} health", ally.health).into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
+        stats_text.set_text(format!("{} speed", ally.speed).into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats3");
+        let text = ally
+            .traits
+            .iter()
+            .map(|trait_| match trait_ {
+                Trait::SilverVulnerable => "Vulnerable to silver".into(),
+                Trait::HolyVulnerable => "Vulnerable to holy".into(),
+                Trait::StakeVulnerable => "Vulnerable to stakes".into(),
+                Trait::SunlightVulnerable => "Vulnerable to sunlight".into(),
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        stats_text.set_text(text.into());
+
+        self.base_mut().set_visible(true);
+    }
+
+    pub fn select_enemy(&mut self, enemy_id: EnemyId, level: &Level) {
+        let enemy = level.get_enemy(enemy_id);
+        let enemy = enemy.bind();
+
+        let mut title = self.base().get_node_as::<Label>("Info/Title");
+        title.set_text(enemy.name().into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
+        stats_text.set_text(format!("{} health", enemy.health).into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
+        stats_text.set_text(format!("{} speed", enemy.speed).into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats3");
+        let text = enemy
+            .traits
+            .iter()
+            .map(|trait_| match trait_ {
+                Trait::SilverVulnerable => "Vulnerable to silver".into(),
+                Trait::HolyVulnerable => "Vulnerable to holy".into(),
+                Trait::StakeVulnerable => "Vulnerable to stakes".into(),
+                Trait::SunlightVulnerable => "Vulnerable to sunlight".into(),
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        stats_text.set_text(text.into());
+
+        self.base_mut().set_visible(true);
+    }
+
+    pub fn select_item(&mut self, item_id: ItemId, level: &Level) {
+        let item = level.get_item(item_id);
+        let item = item.bind();
+        let stats = abilities().get(&item.ability()).unwrap();
+
+        let mut title = self.base().get_node_as::<Label>("Info/Title");
+        title.set_text(item.name().into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
+        let text = match stats.damage_kind {
+            DamageKind::Normal => format!("{} damage", stats.damage),
+            DamageKind::Silver => format!("{} silver damage", stats.damage),
+            DamageKind::Holy => format!("{} holy damage", stats.damage),
+            DamageKind::Fire => format!("{} fire damage", stats.damage),
+            DamageKind::Stake => "Insta-kill a vampire".into(),
+        };
+        stats_text.set_text(text.into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
+        let text = match item.kind {
+            ItemKind::IronBolt | ItemKind::SilverBolt => "Crossbow ammunition".into(),
+            _ => format!("{} range", stats.range),
+        };
+        stats_text.set_text(text.into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats3");
+        stats_text.set_text("".into());
+
+        self.base_mut().set_visible(true);
+    }
+
+    pub fn deselect_tile(&mut self) {
+        self.selected_ally = None;
+        self.selected_enemy = None;
+        self.selected_item = None;
+        self.clear_info();
+    }
+
+    pub fn select_ability(&mut self, ability: Ability) {
+        let stats = abilities().get(&&ability).unwrap();
+        let mut title = self.base().get_node_as::<Label>("Info/Title");
+        title.set_text(stats.name.clone().into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
+        let text = match stats.damage_kind {
+            DamageKind::Normal => format!("{} damage", stats.damage),
+            DamageKind::Silver => format!("{} silver damage", stats.damage),
+            DamageKind::Holy => format!("{} holy damage", stats.damage),
+            DamageKind::Fire => format!("{} fire damage", stats.damage),
+            DamageKind::Stake => "Insta-kill a vampire".into(),
+        };
+        stats_text.set_text(text.into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
+        stats_text.set_text(format!("{} range", stats.range).into());
+
+        let mut stats_text = self.base().get_node_as::<Label>("Info/Stats3");
+        stats_text.set_text("".into());
+
+        self.base_mut().set_visible(true);
+    }
+
+    pub fn deselect_ability(&mut self, level: &Level) {
+        self.selected_ability = None;
+
+        if let Some(ally_id) = self.selected_ally {
+            self.select_ally(ally_id, level);
+        } else if let Some(enemy_id) = self.selected_enemy {
+            self.select_enemy(enemy_id, level);
+        } else if let Some(item_id) = self.selected_item {
+            self.select_item(item_id, level);
+        } else {
+            self.clear_info();
+        }
+    }
+}
+
+const NUM_ICONS: usize = 6;
 
 #[derive(GodotClass)]
 #[class(init, base=HBoxContainer)]
@@ -34,6 +199,9 @@ impl IHBoxContainer for AbilityBar {
             let mut ally = level.get_ally(selected);
             let mut ally = ally.bind_mut();
 
+            let mut info_panel = self.base().get_node_as::<InfoPanel>("../InfoPanel");
+            let mut info_panel = info_panel.bind_mut();
+
             let toggled = input.is_action_just_pressed("choose".into())
                 || input.is_action_just_pressed("select".into()) && self.hovered.is_some();
             if toggled {
@@ -47,6 +215,8 @@ impl IHBoxContainer for AbilityBar {
                         let mut icon = icon.bind_mut();
                         icon.set_selected(true);
                         icon.set_hovered(false);
+
+                        info_panel.deselect_ability(&level);
                     }
                     None => {
                         self.hovered = Some(ally.selected_ability);
@@ -58,51 +228,54 @@ impl IHBoxContainer for AbilityBar {
                         let mut icon = icon.bind_mut();
                         icon.set_selected(false);
                         icon.set_hovered(true);
+
+                        info_panel.select_ability(*ally.current_ability());
                     }
                 }
             }
 
-            match self.hovered {
-                Some(i) => {
-                    if input.is_action_just_pressed("left".into()) {
-                        let mut icon = self
-                            .base()
-                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
-                        let mut icon = icon.bind_mut();
-                        icon.set_hovered(false);
+            if let Some(i) = self.hovered {
+                if input.is_action_just_pressed("left".into()) {
+                    let mut icon = self
+                        .base()
+                        .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
+                    let mut icon = icon.bind_mut();
+                    icon.set_hovered(false);
 
-                        let i = if i > 0 { i - 1 } else { self.length - 1 };
+                    let i = if i > 0 { i - 1 } else { self.length - 1 };
 
-                        let mut icon = self
-                            .base()
-                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
-                        let mut icon = icon.bind_mut();
-                        icon.set_hovered(true);
+                    let mut icon = self
+                        .base()
+                        .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
+                    let mut icon = icon.bind_mut();
+                    icon.set_hovered(true);
 
-                        ally.selected_ability = i;
-                        self.hovered = Some(i);
-                    }
+                    ally.selected_ability = i;
+                    self.hovered = Some(i);
 
-                    if input.is_action_just_pressed("right".into()) {
-                        let mut icon = self
-                            .base()
-                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
-                        let mut icon = icon.bind_mut();
-                        icon.set_hovered(false);
-
-                        let i = if i < self.length - 1 { i + 1 } else { 0 };
-
-                        let mut icon = self
-                            .base()
-                            .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
-                        let mut icon = icon.bind_mut();
-                        icon.set_hovered(true);
-
-                        ally.selected_ability = i;
-                        self.hovered = Some(i);
-                    }
+                    info_panel.select_ability(*ally.current_ability());
                 }
-                None => (),
+
+                if input.is_action_just_pressed("right".into()) {
+                    let mut icon = self
+                        .base()
+                        .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
+                    let mut icon = icon.bind_mut();
+                    icon.set_hovered(false);
+
+                    let i = if i < self.length - 1 { i + 1 } else { 0 };
+
+                    let mut icon = self
+                        .base()
+                        .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
+                    let mut icon = icon.bind_mut();
+                    icon.set_hovered(true);
+
+                    ally.selected_ability = i;
+                    self.hovered = Some(i);
+
+                    info_panel.select_ability(*ally.current_ability());
+                }
             }
         }
     }
@@ -115,7 +288,13 @@ impl AbilityBar {
                 .base()
                 .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
             let mut icon = icon.bind_mut();
-            icon.set_ability(ally.abilities.get(i));
+            let ability = ally.abilities.get(i);
+            icon.set_ability(
+                ability,
+                *ability
+                    .map(|ability| ally.uses.get(ability).unwrap())
+                    .unwrap_or(&0),
+            );
 
             if i == ally.selected_ability {
                 icon.set_selected(true);
@@ -131,7 +310,7 @@ impl AbilityBar {
                 .base()
                 .get_node_as::<AbilityIcon>(format!("AbilityIcon{}", i));
             let mut icon = icon.bind_mut();
-            icon.set_ability(None);
+            icon.set_ability(None, 0);
             icon.set_selected(false);
             icon.set_hovered(false);
         }
@@ -151,9 +330,16 @@ pub struct AbilityIcon {
 }
 
 impl AbilityIcon {
-    pub fn set_ability(&mut self, ability: Option<&Ability>) {
+    pub fn set_ability(&mut self, ability: Option<&Ability>, uses: u16) {
         match ability {
-            Some(_) => self.base_mut().set_visible(true),
+            Some(ability) => {
+                self.base_mut().set_visible(true);
+
+                let stats = abilities().get(ability).unwrap();
+                let mut amount = self.base().get_node_as::<Label>("Amount");
+                amount.set_visible(stats.consumable && uses > 0);
+                amount.set_text(uses.to_string().into());
+            }
             None => self.base_mut().set_visible(false),
         }
         self.ability = ability.cloned();

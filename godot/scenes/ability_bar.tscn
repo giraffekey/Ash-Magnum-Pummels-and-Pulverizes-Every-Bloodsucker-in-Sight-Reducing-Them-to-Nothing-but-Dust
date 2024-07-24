@@ -1,6 +1,7 @@
-[gd_scene load_steps=11 format=3 uid="uid://d1o6clxpxrgac"]
+[gd_scene load_steps=9 format=3 uid="uid://d1o6clxpxrgac"]
 
 [ext_resource type="Texture2D" uid="uid://ba7xgndjq62px" path="res://assets/sprites/abilities.png" id="1_pcuxt"]
+[ext_resource type="FontFile" uid="uid://cxgjerdpqlq8a" path="res://assets/fonts/Covenant5x5.ttf" id="2_micq6"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_0d4i1"]
 atlas = ExtResource("1_pcuxt")
@@ -20,21 +21,14 @@ atlas = ExtResource("1_pcuxt")
 [sub_resource type="AtlasTexture" id="AtlasTexture_i88h6"]
 atlas = ExtResource("1_pcuxt")
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_3xbra"]
-atlas = ExtResource("1_pcuxt")
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_y12f4"]
-atlas = ExtResource("1_pcuxt")
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_c7jss"]
-atlas = ExtResource("1_pcuxt")
-
 [node name="Abilities" type="AbilityBar"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 334.0
-offset_bottom = -480.0
+offset_left = 22.0
+offset_top = -12.0
+offset_right = -22.0
+offset_bottom = -468.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -43,42 +37,82 @@ visible = false
 layout_mode = 2
 texture = SubResource("AtlasTexture_0d4i1")
 
+[node name="Amount" type="Label" parent="AbilityIcon0"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 13.0
+offset_right = 23.0
+offset_bottom = 24.0
+theme_override_fonts/font = ExtResource("2_micq6")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
+
 [node name="AbilityIcon1" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
 texture = SubResource("AtlasTexture_7gg8v")
+
+[node name="Amount" type="Label" parent="AbilityIcon1"]
+offset_left = 12.0
+offset_top = 13.0
+offset_right = 23.0
+offset_bottom = 24.0
+theme_override_fonts/font = ExtResource("2_micq6")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
 
 [node name="AbilityIcon2" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
 texture = SubResource("AtlasTexture_bevug")
 
+[node name="Amount" type="Label" parent="AbilityIcon2"]
+offset_left = 12.0
+offset_top = 13.0
+offset_right = 23.0
+offset_bottom = 24.0
+theme_override_fonts/font = ExtResource("2_micq6")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
+
 [node name="AbilityIcon3" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
 texture = SubResource("AtlasTexture_3nrpt")
+
+[node name="Amount" type="Label" parent="AbilityIcon3"]
+offset_left = 12.0
+offset_top = 13.0
+offset_right = 23.0
+offset_bottom = 24.0
+theme_override_fonts/font = ExtResource("2_micq6")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
 
 [node name="AbilityIcon4" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
 texture = SubResource("AtlasTexture_b6mi6")
 
+[node name="Amount" type="Label" parent="AbilityIcon4"]
+offset_left = 12.0
+offset_top = 13.0
+offset_right = 23.0
+offset_bottom = 24.0
+theme_override_fonts/font = ExtResource("2_micq6")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
+
 [node name="AbilityIcon5" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
 texture = SubResource("AtlasTexture_i88h6")
 
-[node name="AbilityIcon6" type="AbilityIcon" parent="."]
-visible = false
-layout_mode = 2
-texture = SubResource("AtlasTexture_3xbra")
-
-[node name="AbilityIcon7" type="AbilityIcon" parent="."]
-visible = false
-layout_mode = 2
-texture = SubResource("AtlasTexture_y12f4")
-
-[node name="AbilityIcon8" type="AbilityIcon" parent="."]
-visible = false
-layout_mode = 2
-texture = SubResource("AtlasTexture_c7jss")
+[node name="Amount" type="Label" parent="AbilityIcon5"]
+offset_left = 12.0
+offset_top = 13.0
+offset_right = 23.0
+offset_bottom = 24.0
+theme_override_fonts/font = ExtResource("2_micq6")
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
