@@ -1,4 +1,4 @@
-use crate::ability::{abilities, Ability, DamageKind};
+use crate::ability::{abilities, Ability, Action, DamageKind};
 use crate::dialogue::Dialogue;
 use crate::level::{Ally, AllyId, EnemyId, ItemId, ItemKind, Level};
 use crate::traits::Trait;
@@ -41,7 +41,7 @@ impl InfoPanel {
         title.set_text(ally.name().into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
-        stats_text.set_text(format!("{} health", ally.health).into());
+        stats_text.set_text(format!("{}/{} health", ally.health, ally.max_health).into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
         stats_text.set_text(format!("{} speed", ally.speed).into());
@@ -50,12 +50,7 @@ impl InfoPanel {
         let text = ally
             .traits
             .iter()
-            .map(|trait_| match trait_ {
-                Trait::SilverVulnerable => "Vulnerable to silver".into(),
-                Trait::HolyVulnerable => "Vulnerable to holy".into(),
-                Trait::StakeVulnerable => "Vulnerable to stakes".into(),
-                Trait::SunlightVulnerable => "Vulnerable to sunlight".into(),
-            })
+            .map(|trait_| trait_description(*trait_))
             .collect::<Vec<String>>()
             .join("\n");
         stats_text.set_text(text.into());
@@ -71,7 +66,7 @@ impl InfoPanel {
         title.set_text(enemy.name().into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
-        stats_text.set_text(format!("{} health", enemy.health).into());
+        stats_text.set_text(format!("{}/{} health", enemy.health, enemy.max_health).into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
         stats_text.set_text(format!("{} speed", enemy.speed).into());
@@ -80,12 +75,7 @@ impl InfoPanel {
         let text = enemy
             .traits
             .iter()
-            .map(|trait_| match trait_ {
-                Trait::SilverVulnerable => "Vulnerable to silver".into(),
-                Trait::HolyVulnerable => "Vulnerable to holy".into(),
-                Trait::StakeVulnerable => "Vulnerable to stakes".into(),
-                Trait::SunlightVulnerable => "Vulnerable to sunlight".into(),
-            })
+            .map(|trait_| trait_description(*trait_))
             .collect::<Vec<String>>()
             .join("\n");
         stats_text.set_text(text.into());
@@ -102,14 +92,7 @@ impl InfoPanel {
         title.set_text(item.name().into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
-        let text = match stats.damage_kind {
-            DamageKind::Normal => format!("{} damage", stats.damage),
-            DamageKind::Silver => format!("{} silver damage", stats.damage),
-            DamageKind::Holy => format!("{} holy damage", stats.damage),
-            DamageKind::Fire => format!("{} fire damage", stats.damage),
-            DamageKind::Stake => "Insta-kill a vampire".into(),
-        };
-        stats_text.set_text(text.into());
+        stats_text.set_text(action_description(stats.action).into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
         let text = match item.kind {
@@ -137,14 +120,7 @@ impl InfoPanel {
         title.set_text(stats.name.clone().into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats1");
-        let text = match stats.damage_kind {
-            DamageKind::Normal => format!("{} damage", stats.damage),
-            DamageKind::Silver => format!("{} silver damage", stats.damage),
-            DamageKind::Holy => format!("{} holy damage", stats.damage),
-            DamageKind::Fire => format!("{} fire damage", stats.damage),
-            DamageKind::Stake => "Insta-kill a vampire".into(),
-        };
-        stats_text.set_text(text.into());
+        stats_text.set_text(action_description(stats.action).into());
 
         let mut stats_text = self.base().get_node_as::<Label>("Info/Stats2");
         stats_text.set_text(format!("{} range", stats.range).into());
@@ -170,7 +146,53 @@ impl InfoPanel {
     }
 }
 
-const NUM_ICONS: usize = 6;
+fn trait_description(trait_: Trait) -> String {
+    match trait_ {
+        Trait::Mist => "Mist".into(),
+        Trait::SilverVulnerable => "Vulnerable to silver".into(),
+        Trait::HolyVulnerable => "Vulnerable to holy".into(),
+        Trait::StakeVulnerable => "Vulnerable to stakes".into(),
+        Trait::SunlightVulnerable => "Vulnerable to sunlight".into(),
+        Trait::HolyFromSunlight => "Sunlight deals holy damage".into(),
+    }
+}
+
+fn action_description(action: Action) -> String {
+    match action {
+        Action::Attack {
+            damage_kind,
+            damage,
+        } => match damage_kind {
+            DamageKind::Normal => format!("{} damage", damage),
+            DamageKind::Silver => format!("{} silver damage", damage),
+            DamageKind::Holy => format!("{} holy damage", damage),
+            DamageKind::Fire => format!("{} fire damage", damage),
+            DamageKind::LifeSteal => format!("{} damage, life steal", damage),
+            DamageKind::Stake => "Insta-kill a vampire".into(),
+            DamageKind::Sunlight => format!("{} sunlight damage", damage),
+        },
+        Action::Push {
+            damage_kind,
+            damage,
+            distance,
+        } => match damage_kind {
+            DamageKind::Normal => format!("{} damage, push {}", damage, distance),
+            DamageKind::Silver => format!("{} silver damage, push {}", damage, distance),
+            DamageKind::Holy => format!("{} holy damage, push {}", damage, distance),
+            DamageKind::Fire => format!("{} fire damage, push {}", damage, distance),
+            DamageKind::LifeSteal => format!("{} damage, life steal, push {}", damage, distance),
+            DamageKind::Stake => format!("Insta-kill a vampire, push {}", distance),
+            DamageKind::Sunlight => format!("{} sunlight damage, push {}", damage, distance),
+        },
+        Action::Activate { trait_ } => match trait_ {
+            Trait::Mist => "Transform into mist".into(),
+            _ => unreachable!(),
+        },
+        _ => unreachable!(),
+    }
+}
+
+const NUM_ICONS: usize = 8;
 
 #[derive(GodotClass)]
 #[class(init, base=HBoxContainer)]
@@ -371,7 +393,12 @@ impl AbilityIcon {
                     Ability::Whip => Vector2::new(0.0, y),
                     Ability::CrossbowIronBolt => Vector2::new(24.0, y),
                     Ability::CrossbowSilverBolt => Vector2::new(48.0, y),
-                    Ability::WoodenStake => Vector2::new(72.0, y),
+                    Ability::Thwack => Vector2::new(72.0, y),
+                    Ability::Sword => Vector2::new(96.0, y),
+                    Ability::Hellfire => Vector2::new(120.0, y),
+                    Ability::VampireBite => Vector2::new(144.0, y),
+                    Ability::Mist => Vector2::new(168.0, y),
+                    Ability::WoodenStake => Vector2::new(192.0, y),
                     _ => unreachable!(),
                 };
                 atlas.set_region(Rect2::new(position, Vector2::new(24.0, 24.0)));

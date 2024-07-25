@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://crxtlorg4pnox"]
+
+[ext_resource type="Texture2D" uid="uid://bua6evv3hox53" path="res://assets/sprites/obstacles.png" id="1_w1s5k"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o44kt"]
+atlas = ExtResource("1_w1s5k")
+region = Rect2(32, 0, 32, 48)
+
+[node name="Table" type="Obstacle"]
+
+[node name="Sprite" type="Sprite2D" parent="."]
+position = Vector2(16, 22)
+texture = SubResource("AtlasTexture_o44kt")

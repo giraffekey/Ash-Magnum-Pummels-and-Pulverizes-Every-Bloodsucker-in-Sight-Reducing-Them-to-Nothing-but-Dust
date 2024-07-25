@@ -2,10 +2,12 @@ use std::sync::OnceLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Trait {
+    Mist,
     SilverVulnerable,
     HolyVulnerable,
     StakeVulnerable,
     SunlightVulnerable,
+    HolyFromSunlight,
 }
 
 pub fn trait_lists() -> &'static Vec<Vec<Trait>> {
@@ -16,6 +18,11 @@ pub fn trait_lists() -> &'static Vec<Vec<Trait>> {
 fn init_trait_lists() -> Vec<Vec<Trait>> {
     vec![
         Vec::new(),
+        vec![
+            Trait::SilverVulnerable,
+            Trait::HolyVulnerable,
+            Trait::HolyFromSunlight,
+        ],
         vec![
             Trait::SilverVulnerable,
             Trait::HolyVulnerable,

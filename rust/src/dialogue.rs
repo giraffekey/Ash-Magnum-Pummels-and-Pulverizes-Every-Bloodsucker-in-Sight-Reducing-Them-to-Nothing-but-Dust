@@ -9,6 +9,7 @@ use std::sync::OnceLock;
 pub enum Room {
     #[default]
     EntranceHall,
+    GreatHall,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -25,27 +26,34 @@ pub fn trigger_lists() -> &'static HashMap<Room, Vec<(Vec<DialogueEvent>, String
 }
 
 fn init_trigger_lists() -> HashMap<Room, Vec<(Vec<DialogueEvent>, String)>> {
-    [(
-        Room::EntranceHall,
-        vec![
-            (
-                vec![DialogueEvent::LevelReady],
-                "entrance-hall-movement-manual".into(),
-            ),
-            (
-                vec![DialogueEvent::EnemyMoved(EnemyKind::Bat)],
-                "entrance-hall-attack-manual".into(),
-            ),
-            (
-                vec![DialogueEvent::EnemyKilled(EnemyKind::Bat)],
-                "entrance-hall-defeat-bat".into(),
-            ),
-            (
-                vec![DialogueEvent::EnemyMoved(EnemyKind::Vampire)],
-                "entrance-hall-vampire-appears".into(),
-            ),
-        ],
-    )]
+    [
+        (
+            Room::EntranceHall,
+            vec![
+                (
+                    vec![DialogueEvent::LevelReady],
+                    "entrance-hall-movement-manual".into(),
+                ),
+                (
+                    vec![DialogueEvent::EnemyMoved(EnemyKind::Bat)],
+                    "entrance-hall-attack-manual".into(),
+                ),
+                (
+                    vec![DialogueEvent::EnemyKilled(EnemyKind::Bat)],
+                    "entrance-hall-defeat-bat".into(),
+                ),
+                (
+                    vec![DialogueEvent::EnemyMoved(EnemyKind::Vampire)],
+                    "entrance-hall-vampire-appears".into(),
+                ),
+                (
+                    vec![DialogueEvent::EnemyMoved(EnemyKind::BigBatty)],
+                    "entrance-hall-big-batty".into(),
+                ),
+            ],
+        ),
+        (Room::GreatHall, vec![]),
+    ]
     .into()
 }
 

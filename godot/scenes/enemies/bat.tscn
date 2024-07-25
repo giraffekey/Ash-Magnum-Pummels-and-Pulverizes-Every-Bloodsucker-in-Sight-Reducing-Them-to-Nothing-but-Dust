@@ -284,11 +284,12 @@ _data = {
 }
 
 [node name="Bat" type="Enemy"]
-health = 2
+max_health = 2
 speed = 5
 view_distance = 6
-ability_list = 1
-trait_list = 0
+width = 1
+height = 1
+ability_list = 2
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {

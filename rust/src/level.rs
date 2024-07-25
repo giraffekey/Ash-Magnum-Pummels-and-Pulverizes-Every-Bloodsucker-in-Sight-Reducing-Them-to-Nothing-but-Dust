@@ -1,4 +1,4 @@
-use crate::ability::{abilities, ability_lists, Ability, DamageKind};
+use crate::ability::{abilities, ability_lists, Ability, Action, DamageKind};
 use crate::dialogue::{Dialogue, DialogueEvent};
 use crate::math::{attack_positions, compute_fov, line_to, pathfind, Direction, Position};
 use crate::traits::{trait_lists, Trait};
@@ -9,6 +9,7 @@ use godot::engine::{
 };
 use godot::global::instance_from_id;
 use godot::prelude::*;
+use std::cmp::{self, Ordering};
 use std::collections::{HashMap, HashSet};
 
 pub const LEVEL_WIDTH: usize = 16;
@@ -37,6 +38,7 @@ pub struct Ally {
     pub id: AllyId,
     pub position: Position,
     #[export]
+    pub max_health: u16,
     pub health: u16,
     #[export]
     pub speed: u16,
@@ -69,6 +71,8 @@ impl INode2D for Ally {
             "animation_finished".into(),
             Callable::from_object_method(&self.base(), "animation_end"),
         );
+
+        self.health = self.max_health;
 
         let ability_list = ability_lists()[self.ability_list as usize].clone();
         for (ability, uses) in &ability_list {
@@ -261,7 +265,12 @@ impl Ally {
         }
 
         match ability {
-            Ability::Whip | Ability::WoodenStake => match self.position.direction_to(position) {
+            Ability::Whip
+            | Ability::Thwack
+            | Ability::Sword
+            | Ability::Hellfire
+            | Ability::VampireBite
+            | Ability::WoodenStake => match self.position.direction_to(position) {
                 Direction::Left => {
                     self.animation = "side_whip".into();
                     self.flip_h(true);
@@ -299,19 +308,22 @@ impl Ally {
                     }
                 }
             }
+            Ability::Mist => match self.animation.as_str() {
+                "side_idle" => self.animation = "side_mist".into(),
+                "back_idle" => self.animation = "back_mist".into(),
+                "front_idle" => self.animation = "front_mist".into(),
+                _ => unreachable!(),
+            },
             _ => unreachable!(),
         }
     }
 
-    pub fn hit(&mut self, mut damage: u16, damage_kind: DamageKind) {
-        for trait_ in &self.traits {
-            match trait_ {
-                Trait::SilverVulnerable if damage_kind == DamageKind::Silver => damage += 1,
-                Trait::HolyVulnerable if damage_kind == DamageKind::Holy => damage += 2,
-                Trait::StakeVulnerable if damage_kind == DamageKind::Stake => damage += 1_000,
-                _ => (),
-            }
-        }
+    pub fn heal(&mut self, amount: u16) {
+        self.health = cmp::min(self.health + amount, self.max_health);
+    }
+
+    pub fn hit(&mut self, damage: u16, damage_kind: DamageKind) {
+        let damage = damage + damage_bonus(damage_kind, &self.traits);
         self.health = self.health.checked_sub(damage).unwrap_or(0);
 
         if self.health == 0 {
@@ -332,6 +344,19 @@ impl Ally {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EnemyAction {
+    Attack {
+        ally_id: AllyId,
+        damage_kind: DamageKind,
+        damage: u16,
+    },
+    Spawn {
+        enemy_kind: EnemyKind,
+        position: Position,
+    },
+}
+
 pub type EnemyId = u16;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Var, Export, GodotConvert)]
@@ -340,6 +365,7 @@ pub enum EnemyKind {
     #[default]
     Bat,
     Vampire,
+    BigBatty,
 }
 
 impl EnemyKind {
@@ -347,6 +373,7 @@ impl EnemyKind {
         match self {
             Self::Bat => "Bat".into(),
             Self::Vampire => "Vampire".into(),
+            Self::BigBatty => "BigBatty".into(),
         }
     }
 }
@@ -359,21 +386,27 @@ pub struct Enemy {
     #[export]
     pub kind: EnemyKind,
     #[export]
+    pub max_health: u16,
     pub health: u16,
     #[export]
     pub speed: u16,
     #[export]
     pub view_distance: u16,
     #[export]
+    pub width: u16,
+    #[export]
+    pub height: u16,
+    #[export]
     pub ability_list: u8,
     pub abilities: Vec<Ability>,
     pub uses: HashMap<Ability, u16>,
+    pub cooldowns: HashMap<Ability, u16>,
     #[export]
     pub trait_list: u8,
     pub traits: Vec<Trait>,
     path: Option<Vec<Position>>,
     index: usize,
-    current_ability: Option<(AllyId, Ability)>,
+    current_ability: Option<(Ability, EnemyAction)>,
     last_known_positions: HashMap<AllyId, Position>,
     #[init(default = "front_idle".into())]
     animation: String,
@@ -390,6 +423,8 @@ impl INode2D for Enemy {
             "animation_finished".into(),
             Callable::from_object_method(&self.base(), "animation_end"),
         );
+
+        self.health = self.max_health;
 
         let ability_list = ability_lists()[self.ability_list as usize].clone();
         for (ability, uses) in &ability_list {
@@ -433,7 +468,7 @@ impl Enemy {
                 let i = level
                     .turn_order
                     .iter()
-                    .position(|id| *id == self.id)
+                    .position(|(id, _)| *id == self.id)
                     .unwrap();
                 level.turn_order.remove(i);
 
@@ -463,30 +498,40 @@ impl Enemy {
             Some(path) if self.index < path.len() => {
                 let position = path[self.index];
                 let mut tween = self.base_mut().create_tween().unwrap();
-                tween.tween_property(
-                    self.base().clone().upcast(),
-                    "position".into(),
-                    Variant::from(position.to_vector()),
-                    0.3,
-                );
                 tween.tween_callback(Callable::from_object_method(&self.base(), "next_position"));
 
-                match self.position.direction_to(position) {
-                    Direction::Left => {
-                        self.animation = "side_walk".into();
-                        self.flip_h(true);
-                    }
-                    Direction::Right => {
-                        self.animation = "side_walk".into();
-                        self.flip_h(false);
-                    }
-                    Direction::Up => {
-                        self.animation = "back_walk".into();
-                        self.flip_h(false);
-                    }
-                    Direction::Down => {
-                        self.animation = "front_walk".into();
-                        self.flip_h(false);
+                if position == self.position {
+                    tween.tween_property(
+                        self.base().clone().upcast(),
+                        "position".into(),
+                        Variant::from(position.to_vector()),
+                        0.0,
+                    );
+                } else {
+                    tween.tween_property(
+                        self.base().clone().upcast(),
+                        "position".into(),
+                        Variant::from(position.to_vector()),
+                        0.3,
+                    );
+
+                    match self.position.direction_to(position) {
+                        Direction::Left => {
+                            self.animation = "side_walk".into();
+                            self.flip_h(true);
+                        }
+                        Direction::Right => {
+                            self.animation = "side_walk".into();
+                            self.flip_h(false);
+                        }
+                        Direction::Up => {
+                            self.animation = "back_walk".into();
+                            self.flip_h(false);
+                        }
+                        Direction::Down => {
+                            self.animation = "front_walk".into();
+                            self.flip_h(false);
+                        }
                     }
                 }
 
@@ -502,6 +547,7 @@ impl Enemy {
                     "side_walk" => self.animation = "side_idle".into(),
                     "back_walk" => self.animation = "back_idle".into(),
                     "front_walk" => self.animation = "front_idle".into(),
+                    "side_idle" | "back_idle" | "front_idle" => (),
                     _ => unreachable!(),
                 }
 
@@ -512,15 +558,49 @@ impl Enemy {
                 };
                 level.turn = Turn::Enemy(i + 1, false);
 
-                if let Some((ally_id, ability)) = self.current_ability {
-                    let mut ally = level.get_ally(ally_id);
-                    let mut ally = ally.bind_mut();
+                for (_, cooldown) in &mut self.cooldowns {
+                	if *cooldown > 0 {
+                		*cooldown -= 1;
+                	}
+                }
 
-                    let stats = abilities().get(&ability).unwrap();
-                    ally.hit(stats.damage, stats.damage_kind);
+                if let Some((ability, action)) = self.current_ability {
+                    match action {
+                        EnemyAction::Attack {
+                            ally_id,
+                            damage_kind,
+                            damage,
+                        } => {
+                            let mut ally = level.get_ally(ally_id);
+                            let mut ally = ally.bind_mut();
+                            ally.hit(damage, damage_kind);
 
-                    self.use_ability(ability, ally.position);
-                    self.current_ability = None;
+                            match damage_kind {
+                                DamageKind::LifeSteal => self.heal(damage),
+                                _ => (),
+                            }
+
+                            self.use_ability(ability, ally.position);
+                            self.current_ability = None;
+                        }
+                        EnemyAction::Spawn {
+                            enemy_kind,
+                            position,
+                        } => {
+                        	let stats = abilities().get(&ability).unwrap();
+                        	match stats.action {
+                        		Action::Spawn { cooldown, .. } => {
+                        			self.cooldowns.insert(ability, cooldown);
+                        		}
+                        		_ => (),
+                        	}
+
+                            level.spawn_enemy(enemy_kind, position);
+
+                            self.use_ability(ability, position);
+                            self.current_ability = None;
+                        }
+                    }
                 }
 
                 let mut dialogue = self.base().get_node_as::<Dialogue>("../../../Dialogue");
@@ -541,68 +621,157 @@ impl Enemy {
         &mut self,
         grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
         allies: &HashMap<AllyId, i64>,
-    ) -> (Option<Vec<Position>>, Option<(Ability, AllyId)>) {
+    ) -> (Option<Vec<Position>>, Option<(Ability, EnemyAction)>) {
         let visible = compute_fov(self.position, self.view_distance, grid);
+        let dimensions = (self.width as usize, self.height as usize);
 
-        let mut positions = Vec::new();
-        for (ally_id, instance_id) in allies {
-            let ally: Gd<Ally> = instance_from_id(*instance_id).unwrap().cast();
-            let ally = ally.bind();
+        let mut actions = Vec::new();
+        for ability in &self.abilities {
+            let stats = abilities().get(ability).unwrap();
+            match stats.action {
+                Action::Attack {
+                    damage_kind,
+                    damage,
+                } => {
+                    for (ally_id, instance_id) in allies {
+                        let ally: Gd<Ally> = instance_from_id(*instance_id).unwrap().cast();
+                        let ally = ally.bind();
 
-            if visible.contains(&ally.position) {
-                self.last_known_positions.insert(*ally_id, ally.position);
-
-                for ability in &self.abilities {
-                    let stats = abilities().get(ability).unwrap();
-                    positions.extend(
-                        attack_positions(ally.position, stats.range, grid)
-                            .iter()
-                            .map(|(position, range)| {
-                                (
-                                    Some(*ability),
-                                    *ally_id,
-                                    *range,
-                                    stats.damage,
-                                    pathfind(self.position, *position, grid),
-                                )
-                            })
-                            .filter_map(|(ability, ally_id, range, damage, path)| {
-                                path.map(|path| (ability, ally_id, range, damage, path))
-                            }),
-                    );
+                        if visible.contains(&ally.position) {
+                            self.last_known_positions.insert(*ally_id, ally.position);
+                            actions.extend(
+                                attack_positions(ally.position, stats.range, grid)
+                                    .iter()
+                                    .map(|(position, range)| {
+                                        (
+                                            Some(*ability),
+                                            *ally_id,
+                                            *range,
+                                            pathfind(self.position, *position, grid, dimensions),
+                                        )
+                                    })
+                                    .filter_map(|(ability, ally_id, range, path)| {
+                                        path.map(|path| {
+                                            (
+                                                ability,
+                                                EnemyAction::Attack {
+                                                    ally_id,
+                                                    damage_kind,
+                                                    damage,
+                                                },
+                                                range,
+                                                path,
+                                            )
+                                        })
+                                    }),
+                            );
+                        } else if let Some(last_known_position) =
+                            self.last_known_positions.get(&ally_id)
+                        {
+                            if let Some(path) =
+                                pathfind(self.position, *last_known_position, grid, dimensions)
+                            {
+                                actions.push((
+                                    None,
+                                    EnemyAction::Attack {
+                                        ally_id: *ally_id,
+                                        damage_kind,
+                                        damage,
+                                    },
+                                    1,
+                                    path,
+                                ));
+                            }
+                        }
+                    }
                 }
-            } else if let Some(last_known_position) = self.last_known_positions.get(&ally_id) {
-                if let Some(path) = pathfind(self.position, *last_known_position, grid) {
-                    positions.push((None, *ally_id, 1, 0, path));
+                Action::Spawn { enemy_kind, .. } => {
+                	let cooldown_finished = *self.cooldowns.get(&ability).unwrap_or(&0) == 0;
+                	let any_visible = allies.values().any(|instance_id| {
+                        let ally: Gd<Ally> = instance_from_id(*instance_id).unwrap().cast();
+                        let ally = ally.bind();
+                        visible.contains(&ally.position)
+                    });
+
+                    if cooldown_finished && any_visible {
+                        for i in 0..self.width as usize {
+                            for j in 0..self.height as usize {
+                                let position = Position {
+                                    x: self.position.x + i,
+                                    y: self.position.y + j,
+                                };
+                                for adjacent in position.adjacent() {
+                                    match grid[adjacent.x][adjacent.y] {
+                                        Tile::Empty | Tile::Item(_) => actions.push((
+                                            Some(*ability),
+                                            EnemyAction::Spawn {
+                                                enemy_kind,
+                                                position: adjacent,
+                                            },
+                                            stats.range,
+                                            vec![self.position],
+                                        )),
+                                        Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => (),
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+                _ => unreachable!(),
             }
         }
 
-        if positions.is_empty() {
+        if actions.is_empty() {
             (None, None)
         } else {
-            positions.sort_by(
-                |(_, _, a_range, a_damage, a_path), (_, _, b_range, b_damage, b_path)| {
-                    let a_cost = a_path.len() as u16;
-                    let b_cost = b_path.len() as u16;
-                    let a_within = a_cost <= self.speed;
-                    let b_within = b_cost <= self.speed;
+            actions.sort_by(
+                |(_, a_action, a_range, a_path), (_, b_action, b_range, b_path)| match (
+                    a_action, b_action,
+                ) {
+                    (
+                        EnemyAction::Attack {
+                            ally_id: a_ally_id,
+                            damage_kind: a_damage_kind,
+                            damage: a_damage,
+                        },
+                        EnemyAction::Attack {
+                            ally_id: b_ally_id,
+                            damage_kind: b_damage_kind,
+                            damage: b_damage,
+                        },
+                    ) => {
+                        let a_ally: Gd<Ally> = instance_from_id(allies[a_ally_id]).unwrap().cast();
+                        let a_ally = a_ally.bind();
+                        let b_ally: Gd<Ally> = instance_from_id(allies[b_ally_id]).unwrap().cast();
+                        let b_ally = b_ally.bind();
 
-                    a_within
-                        .cmp(&b_within)
-                        .reverse()
-                        .then(a_damage.cmp(b_damage).reverse())
-                        .then(a_range.cmp(b_range).reverse())
-                        .then(a_cost.cmp(&b_cost))
+                        let a_damage = a_damage + damage_bonus(*a_damage_kind, &a_ally.traits);
+                        let b_damage = b_damage + damage_bonus(*b_damage_kind, &b_ally.traits);
+                        let a_cost = a_path.len() as u16;
+                        let b_cost = b_path.len() as u16;
+                        let a_within = a_cost <= self.speed;
+                        let b_within = b_cost <= self.speed;
+
+                        a_within
+                            .cmp(&b_within)
+                            .reverse()
+                            .then(a_damage.cmp(&b_damage).reverse())
+                            .then(a_range.cmp(b_range).reverse())
+                            .then(a_cost.cmp(&b_cost))
+                    }
+                    (EnemyAction::Attack { .. }, EnemyAction::Spawn { .. }) => Ordering::Greater,
+                    (EnemyAction::Spawn { .. }, EnemyAction::Attack { .. }) => Ordering::Less,
+                    (EnemyAction::Spawn { .. }, EnemyAction::Spawn { .. }) => Ordering::Equal,
                 },
             );
 
-            let (ability, ally_id, _, _, path) = positions.first().unwrap();
+            let (ability, action, _, path) = actions.first().unwrap();
 
             if path.len() as u16 <= self.speed {
                 (
                     Some(path.clone()),
-                    ability.map(|ability| (ability, *ally_id)),
+                    ability.map(|ability| (ability, *action)),
                 )
             } else {
                 (Some(path[0..self.speed as usize].to_vec()), None)
@@ -636,39 +805,38 @@ impl Enemy {
         }
 
         match ability {
-            Ability::BatBite | Ability::VampireScratch => {
-                match self.position.direction_to(position) {
-                    Direction::Left => {
-                        self.animation = "side_attack".into();
-                        self.flip_h(true);
-                    }
-                    Direction::Right => {
-                        self.animation = "side_attack".into();
-                        self.flip_h(false);
-                    }
-                    Direction::Up => {
-                        self.animation = "back_attack".into();
-                        self.flip_h(false);
-                    }
-                    Direction::Down => {
-                        self.animation = "front_attack".into();
-                        self.flip_h(false);
-                    }
+            Ability::BatBite
+            | Ability::VampireScratch
+            | Ability::VampireBite
+            | Ability::BigBatBite => match self.position.direction_to(position) {
+                Direction::Left => {
+                    self.animation = "side_attack".into();
+                    self.flip_h(true);
                 }
-            }
+                Direction::Right => {
+                    self.animation = "side_attack".into();
+                    self.flip_h(false);
+                }
+                Direction::Up => {
+                    self.animation = "back_attack".into();
+                    self.flip_h(false);
+                }
+                Direction::Down => {
+                    self.animation = "front_attack".into();
+                    self.flip_h(false);
+                }
+            },
+            Ability::SpawnBat => (),
             _ => unreachable!(),
         }
     }
 
-    pub fn hit(&mut self, mut damage: u16, damage_kind: DamageKind) {
-        for trait_ in &self.traits {
-            match trait_ {
-                Trait::SilverVulnerable if damage_kind == DamageKind::Silver => damage += 1,
-                Trait::HolyVulnerable if damage_kind == DamageKind::Holy => damage += 2,
-                Trait::StakeVulnerable if damage_kind == DamageKind::Stake => damage += 1_000,
-                _ => (),
-            }
-        }
+    pub fn heal(&mut self, amount: u16) {
+        self.health = cmp::min(self.health + amount, self.max_health);
+    }
+
+    pub fn hit(&mut self, damage: u16, damage_kind: DamageKind) {
+        let damage = damage + damage_bonus(damage_kind, &self.traits);
         self.health = self.health.checked_sub(damage).unwrap_or(0);
 
         if self.health == 0 {
@@ -687,6 +855,24 @@ impl Enemy {
             }
         }
     }
+
+    pub fn push(&mut self, distance: u16) {
+        todo!()
+    }
+}
+
+fn damage_bonus(damage_kind: DamageKind, traits: &[Trait]) -> u16 {
+    traits
+        .iter()
+        .map(|trait_| match (damage_kind, trait_) {
+            (DamageKind::Silver, Trait::SilverVulnerable) => 1,
+            (DamageKind::Holy, Trait::HolyVulnerable) => 2,
+            (DamageKind::Stake, Trait::StakeVulnerable) => 1_000,
+            (DamageKind::Sunlight, Trait::SunlightVulnerable) => 1_000,
+            (DamageKind::Sunlight, Trait::HolyFromSunlight) => 2,
+            _ => 0,
+        })
+        .sum()
 }
 
 pub type ObstacleId = u16;
@@ -770,10 +956,14 @@ pub enum Turn {
 pub struct Level {
     pub grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
     pub turn: Turn,
-    pub turn_order: Vec<EnemyId>,
+    pub turn_order: Vec<(EnemyId, u16)>,
+    pub spawn_queue: Vec<EnemyId>,
     pub allies: HashMap<AllyId, i64>,
+    pub enemy_id: EnemyId,
     pub enemies: HashMap<EnemyId, i64>,
+    pub obstacle_id: ObstacleId,
     pub obstacles: HashMap<ObstacleId, i64>,
+    pub item_id: ItemId,
     pub items: HashMap<ItemId, i64>,
     pub shadows_cast: bool,
     base: Base<Node2D>,
@@ -810,55 +1000,59 @@ impl INode2D for Level {
         }
 
         let enemies = self.base().get_node_as::<Node2D>("UnitLayer/Enemies");
-        let mut enemy_id = 0;
         let mut turn_order = Vec::new();
         for child in enemies.get_children().iter_shared() {
             let mut enemy: Gd<Enemy> = child.cast();
             let position = enemy.get_position();
             let position = Position::from_vector(position);
-            self.enemies.insert(enemy_id, enemy.instance_id().to_i64());
+            self.enemies
+                .insert(self.enemy_id, enemy.instance_id().to_i64());
 
             let mut enemy = enemy.bind_mut();
             enemy.position = position;
-            self.grid[position.x][position.y] = Tile::Enemy(enemy_id);
-            turn_order.push((enemy_id, enemy.speed));
 
-            enemy.id = enemy_id;
-            enemy_id += 1;
+            for i in 0..enemy.width as usize {
+                for j in 0..enemy.height as usize {
+                    self.grid[position.x + i][position.y + j] = Tile::Enemy(self.enemy_id);
+                }
+            }
+
+            turn_order.push((self.enemy_id, enemy.speed));
+
+            enemy.id = self.enemy_id;
+            self.enemy_id += 1;
         }
 
         turn_order.sort_by(|(_, a_speed), (_, b_speed)| a_speed.cmp(b_speed).reverse());
-        self.turn_order = turn_order.iter().map(|(enemy_id, _)| *enemy_id).collect();
+        self.turn_order = turn_order;
 
         let obstacles = self.base().get_node_as::<CanvasLayer>("ObstacleLayer");
-        let mut obstacle_id = 0;
         for child in obstacles.get_children().iter_shared() {
             let mut obstacle: Gd<Obstacle> = child.cast();
             let position = Position::from_vector(obstacle.get_position());
             self.obstacles
-                .insert(obstacle_id, obstacle.instance_id().to_i64());
+                .insert(self.obstacle_id, obstacle.instance_id().to_i64());
 
             let mut obstacle = obstacle.bind_mut();
             obstacle.position = position;
-            self.grid[position.x][position.y] = Tile::Obstacle(obstacle_id);
+            self.grid[position.x][position.y] = Tile::Obstacle(self.obstacle_id);
 
-            obstacle.id = obstacle_id;
-            obstacle_id += 1;
+            obstacle.id = self.obstacle_id;
+            self.obstacle_id += 1;
         }
 
         let items = self.base().get_node_as::<CanvasLayer>("ItemLayer");
-        let mut item_id = 0;
         for child in items.get_children().iter_shared() {
             let mut item: Gd<Item> = child.cast();
             let position = Position::from_vector(item.get_position());
-            self.items.insert(item_id, item.instance_id().to_i64());
+            self.items.insert(self.item_id, item.instance_id().to_i64());
 
             let mut item = item.bind_mut();
             item.position = position;
-            self.grid[position.x][position.y] = Tile::Item(item_id);
+            self.grid[position.x][position.y] = Tile::Item(self.item_id);
 
-            item.id = item_id;
-            item_id += 1;
+            item.id = self.item_id;
+            self.item_id += 1;
         }
 
         let mut dialogue = self.base().get_node_as::<Dialogue>("Dialogue");
@@ -898,7 +1092,7 @@ impl INode2D for Level {
                             let cursor = self.base().get_node_as::<Cursor>("CursorLayer/Cursor");
                             let mut camera = cursor.get_node_as::<Camera2D>("Camera");
 
-                            let enemy_id = self.turn_order[i];
+                            let (enemy_id, _) = self.turn_order[i];
                             let enemy = self.get_enemy(enemy_id);
 
                             camera.set_position_smoothing_enabled(true);
@@ -930,7 +1124,7 @@ impl INode2D for Level {
                         }
 
                         if i < self.turn_order.len() {
-                            let enemy_id = self.turn_order[i];
+                            let (enemy_id, _) = self.turn_order[i];
                             let mut enemy = self.get_enemy(enemy_id);
                             let mut enemy = enemy.bind_mut();
                             match enemy.animation.as_str() {
@@ -940,13 +1134,18 @@ impl INode2D for Level {
 
                                     if let Some(path) = path {
                                         let position = path.last().unwrap();
-                                        self.grid[enemy.position.x][enemy.position.y] = Tile::Empty;
-                                        self.grid[position.x][position.y] = Tile::Enemy(enemy_id);
-                                        enemy.follow_path(path);
 
-                                        if let Some((ability, ally_id)) = ability {
-                                            enemy.current_ability = Some((ally_id, ability));
+                                        for i in 0..enemy.width as usize {
+                                            for j in 0..enemy.height as usize {
+                                                self.grid[enemy.position.x + i]
+                                                    [enemy.position.y + j] = Tile::Empty;
+                                                self.grid[position.x + i][position.y + j] =
+                                                    Tile::Enemy(enemy_id);
+                                            }
                                         }
+
+                                        enemy.current_ability = ability;
+                                        enemy.follow_path(path);
 
                                         self.turn = Turn::Enemy(i, true);
                                     } else {
@@ -974,6 +1173,16 @@ impl INode2D for Level {
                                 .get_node_as::<Camera2D>("CursorLayer/Cursor/Camera");
                             camera.set_position_smoothing_enabled(false);
                             camera.set_position(Vector2::default());
+
+                            for enemy_id in &self.spawn_queue {
+                                let enemy = self.get_enemy(*enemy_id);
+                                let enemy = enemy.bind();
+                                self.turn_order.push((*enemy_id, enemy.speed));
+                            }
+                            self.turn_order.sort_by(|(_, a_speed), (_, b_speed)| {
+                                a_speed.cmp(b_speed).reverse()
+                            });
+                            self.spawn_queue.clear();
                         }
                     }
                 }
@@ -1050,7 +1259,7 @@ impl Level {
         let mut ally = self.get_ally(ally_id);
         let mut ally = ally.bind_mut();
         if !ally.has_moved {
-            match pathfind(ally.position, position, self.grid) {
+            match pathfind(ally.position, position, self.grid, (1, 1)) {
                 Some(path) if !path.is_empty() && path.len() as u16 <= ally.speed => {
                     self.grid[ally.position.x][ally.position.y] = Tile::Empty;
                     ally.follow_path(path);
@@ -1070,21 +1279,87 @@ impl Level {
 
         if !ally.has_acted {
             let stats = abilities().get(ally.current_ability()).unwrap();
-            match line_to(ally.position, enemy.position, self.grid) {
-                Some(path) if path.len() as u16 <= stats.range => {
-                    ally.use_ability(enemy.position);
-                    enemy.hit(stats.damage, stats.damage_kind);
+            match stats.action {
+                Action::Attack {
+                    damage_kind,
+                    damage,
+                }
+                | Action::Push {
+                    damage_kind,
+                    damage,
+                    ..
+                } => {
+                    for i in 0..enemy.width as usize {
+                        for j in 0..enemy.height as usize {
+                            let position = Position {
+                                x: enemy.position.x + i,
+                                y: enemy.position.y + j,
+                            };
+                            match line_to(ally.position, position, self.grid) {
+                                Some(path) if path.len() as u16 <= stats.range => {
+                                    ally.use_ability(position);
+                                    enemy.hit(damage, damage_kind);
+
+                                    match damage_kind {
+                                        DamageKind::LifeSteal => ally.heal(damage),
+                                        _ => (),
+                                    }
+
+                                    match stats.action {
+                                        Action::Push { distance, .. } => {
+                                            enemy.push(distance);
+                                        }
+                                        _ => (),
+                                    }
+
+                                    return true;
+                                }
+                                _ => (),
+                            }
+                        }
+                    }
+                }
+                Action::Activate { trait_ } => {
+                    let position = ally.position;
+                    ally.use_ability(position);
+                    ally.traits.push(trait_);
                     return true;
                 }
-                _ => (),
+                _ => unreachable!(),
             }
         }
 
-        let mut info_panel = self.base().get_node_as::<InfoPanel>("UILayer/InfoPanel");
-        let mut info_panel = info_panel.bind_mut();
-        info_panel.deselect_tile();
-
         false
+    }
+
+    pub fn spawn_enemy(&mut self, enemy_kind: EnemyKind, position: Position) {
+        let scene = match enemy_kind {
+            EnemyKind::Bat => load::<PackedScene>("res://scenes/enemies/bat.tscn"),
+            EnemyKind::Vampire => load::<PackedScene>("res://scenes/enemies/vampire.tscn"),
+            EnemyKind::BigBatty => load::<PackedScene>("res://scenes/enemies/big_batty.tscn"),
+        };
+
+        let mut enemy: Gd<Enemy> = scene.instantiate().unwrap().cast();
+        let instance_id = enemy.instance_id().to_i64();
+        enemy.set_position(position.to_vector());
+
+        {
+            let mut enemy = enemy.bind_mut();
+            enemy.position = position;
+
+            for i in 0..enemy.width as usize {
+                for j in 0..enemy.height as usize {
+                    self.grid[position.x + i][position.y + j] = Tile::Enemy(self.enemy_id);
+                }
+            }
+
+            self.spawn_queue.push(self.enemy_id);
+            self.enemies.insert(self.enemy_id, instance_id);
+            self.enemy_id += 1;
+        }
+
+        let mut enemies = self.base().get_node_as::<Node2D>("UnitLayer/Enemies");
+        enemies.add_child(enemy.upcast());
     }
 }
 
@@ -1239,6 +1514,12 @@ impl ISprite2D for Cursor {
                                 path_node.clear_path();
                                 self.can_interact = false;
                                 self.acting = false;
+
+                                let mut info_panel = self
+                                    .base()
+                                    .get_node_as::<InfoPanel>("../../UILayer/InfoPanel");
+                                let mut info_panel = info_panel.bind_mut();
+                                info_panel.deselect_tile();
                             }
                         }
                     }
@@ -1255,7 +1536,8 @@ impl ISprite2D for Cursor {
                                 if self.acting {
                                     path_node.set_path(vec![self.position], PathKind::Attack);
                                 } else {
-                                    match pathfind(ally.position, self.position, level.grid) {
+                                    match pathfind(ally.position, self.position, level.grid, (1, 1))
+                                    {
                                         Some(path) if path.len() as u16 <= ally.speed => {
                                             path_node.set_path(path, PathKind::Move);
                                         }
@@ -1267,21 +1549,34 @@ impl ISprite2D for Cursor {
                             }
                         }
                     }
-                    Tile::Enemy(_) if self.acting => {
+                    Tile::Enemy(id) if self.acting => {
                         if let Some(selected) = self.selected {
                             let ally = level.get_ally(selected);
                             let ally = ally.bind();
 
                             let stats = abilities().get(ally.current_ability()).unwrap();
-                            if stats.targets_enemy {
-                                match line_to(ally.position, self.position, level.grid) {
-                                    Some(path) if path.len() as u16 <= stats.range => {
-                                        path_node.set_path(path, PathKind::Attack);
+                            match stats.action {
+                                Action::Attack { .. } | Action::Push { .. } => {
+                                    let enemy = level.get_enemy(id);
+                                    let enemy = enemy.bind();
+
+                                    for i in 0..enemy.width as usize {
+                                        for j in 0..enemy.height as usize {
+                                            let position = Position {
+                                                x: self.position.x + i,
+                                                y: self.position.y + j,
+                                            };
+                                            match line_to(ally.position, position, level.grid) {
+                                                Some(path) if path.len() as u16 <= stats.range => {
+                                                    path_node.set_path(path, PathKind::Attack);
+                                                }
+                                                _ => path_node
+                                                    .set_path(vec![position], PathKind::Attack),
+                                            }
+                                        }
                                     }
-                                    _ => path_node.set_path(vec![self.position], PathKind::Attack),
                                 }
-                            } else {
-                                path_node.set_path(vec![self.position], PathKind::Attack);
+                                _ => path_node.set_path(vec![self.position], PathKind::Attack),
                             }
                         }
                     }
@@ -1295,11 +1590,10 @@ impl ISprite2D for Cursor {
                     let mut info_panel = info_panel.bind_mut();
 
                     match level.at(self.position) {
-                        Tile::Empty => info_panel.deselect_tile(),
+                        Tile::Empty | Tile::Obstacle(_) => info_panel.deselect_tile(),
                         Tile::Ally(ally_id) => info_panel.select_ally(ally_id, &level),
                         Tile::Enemy(enemy_id) => info_panel.select_enemy(enemy_id, &level),
                         Tile::Item(item_id) => info_panel.select_item(item_id, &level),
-                        Tile::Obstacle(_) => (),
                     }
                 }
 

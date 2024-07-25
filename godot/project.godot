@@ -22,10 +22,12 @@ Dialogic="*res://addons/dialogic/Core/DialogicGameHandler.gd"
 [dialogic]
 
 directories/dch_directory={
-"ash-magnum": "res://dialogue/characters/ash-magnum.dch"
+"ash-magnum": "res://dialogue/characters/ash-magnum.dch",
+"big-batty": "res://dialogue/characters/big-batty.dch"
 }
 directories/dtl_directory={
 "entrance-hall-attack-manual": "res://dialogue/timelines/entrance-hall-attack-manual.dtl",
+"entrance-hall-big-batty": "res://dialogue/timelines/entrance-hall-big-batty.dtl",
 "entrance-hall-defeat-bat": "res://dialogue/timelines/entrance-hall-defeat-bat.dtl",
 "entrance-hall-movement-manual": "res://dialogue/timelines/entrance-hall-movement-manual.dtl",
 "entrance-hall-vampire-appears": "res://dialogue/timelines/entrance-hall-vampire-appears.dtl"

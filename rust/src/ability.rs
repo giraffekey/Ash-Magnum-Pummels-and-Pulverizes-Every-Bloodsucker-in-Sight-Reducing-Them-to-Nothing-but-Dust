@@ -1,3 +1,6 @@
+use crate::level::EnemyKind;
+use crate::traits::Trait;
+
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -6,9 +9,16 @@ pub enum Ability {
     Whip,
     CrossbowIronBolt,
     CrossbowSilverBolt,
+    Thwack,
+    Sword,
+    Hellfire,
+    VampireBite,
+    Mist,
     WoodenStake,
     BatBite,
     VampireScratch,
+    BigBatBite,
+    SpawnBat,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -17,16 +27,36 @@ pub enum DamageKind {
     Silver,
     Holy,
     Fire,
+    LifeSteal,
     Stake,
+    Sunlight,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Action {
+    Attack {
+        damage_kind: DamageKind,
+        damage: u16,
+    },
+    Push {
+        damage_kind: DamageKind,
+        damage: u16,
+        distance: u16,
+    },
+    Activate {
+        trait_: Trait,
+    },
+    Spawn {
+        enemy_kind: EnemyKind,
+        cooldown: u16,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct AbilityStats {
     pub name: String,
-    pub damage_kind: DamageKind,
-    pub damage: u16,
+    pub action: Action,
     pub range: u16,
-    pub targets_enemy: bool,
     pub consumable: bool,
 }
 
@@ -41,9 +71,17 @@ fn init_ability_lists() -> Vec<Vec<(Ability, u16)>> {
             (Ability::Whip, 1),
             (Ability::CrossbowIronBolt, 5),
             (Ability::CrossbowSilverBolt, 2),
+            (Ability::Thwack, 2),
+        ],
+        vec![
+            (Ability::Sword, 1),
+            (Ability::Hellfire, 3),
+            (Ability::VampireBite, 1),
+            (Ability::Mist, 1),
         ],
         vec![(Ability::BatBite, 1)],
-        vec![(Ability::VampireScratch, 1)],
+        vec![(Ability::VampireScratch, 1), (Ability::VampireBite, 1)],
+        vec![(Ability::BigBatBite, 1), (Ability::SpawnBat, 1)],
     ]
 }
 
@@ -58,10 +96,11 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
             Ability::Whip,
             AbilityStats {
                 name: "Whip".into(),
-                damage_kind: DamageKind::Silver,
-                damage: 2,
+                action: Action::Attack {
+                    damage_kind: DamageKind::Silver,
+                    damage: 2,
+                },
                 range: 2,
-                targets_enemy: true,
                 consumable: false,
             },
         ),
@@ -69,10 +108,11 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
             Ability::CrossbowIronBolt,
             AbilityStats {
                 name: "Crossbow (Iron Bolts)".into(),
-                damage_kind: DamageKind::Normal,
-                damage: 2,
+                action: Action::Attack {
+                    damage_kind: DamageKind::Normal,
+                    damage: 2,
+                },
                 range: 6,
-                targets_enemy: true,
                 consumable: true,
             },
         ),
@@ -80,10 +120,71 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
             Ability::CrossbowSilverBolt,
             AbilityStats {
                 name: "Crossbow (Silver Bolts)".into(),
-                damage_kind: DamageKind::Silver,
-                damage: 2,
+                action: Action::Attack {
+                    damage_kind: DamageKind::Silver,
+                    damage: 2,
+                },
                 range: 6,
-                targets_enemy: true,
+                consumable: true,
+            },
+        ),
+        (
+            Ability::Thwack,
+            AbilityStats {
+                name: "Thwack".into(),
+                action: Action::Push {
+                    damage_kind: DamageKind::Silver,
+                    damage: 2,
+                    distance: 2,
+                },
+                range: 2,
+                consumable: true,
+            },
+        ),
+        (
+            Ability::Sword,
+            AbilityStats {
+                name: "Sword".into(),
+                action: Action::Attack {
+                    damage_kind: DamageKind::Normal,
+                    damage: 2,
+                },
+                range: 1,
+                consumable: false,
+            },
+        ),
+        (
+            Ability::Hellfire,
+            AbilityStats {
+                name: "Hellfire".into(),
+                action: Action::Attack {
+                    damage_kind: DamageKind::Fire,
+                    damage: 2,
+                },
+                range: 4,
+                consumable: true,
+            },
+        ),
+        (
+            Ability::VampireBite,
+            AbilityStats {
+                name: "Vampire Bite".into(),
+                action: Action::Attack {
+                    damage_kind: DamageKind::LifeSteal,
+                    damage: 1,
+                },
+                range: 1,
+                consumable: false,
+            },
+        ),
+        (
+            Ability::Mist,
+            AbilityStats {
+                name: "Mist".into(),
+                action: Action::Activate {
+                    trait_: Trait::Mist,
+                },
+                range: 0,
                 consumable: true,
             },
         ),
@@ -91,10 +192,11 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
             Ability::WoodenStake,
             AbilityStats {
                 name: "Wooden Stake".into(),
-                damage_kind: DamageKind::Stake,
-                damage: 1,
+                action: Action::Attack {
+                    damage_kind: DamageKind::Stake,
+                    damage: 1,
+                },
                 range: 1,
-                targets_enemy: true,
                 consumable: true,
             },
         ),
@@ -102,10 +204,11 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
             Ability::BatBite,
             AbilityStats {
                 name: "Bat Bite".into(),
-                damage_kind: DamageKind::Normal,
-                damage: 1,
+                action: Action::Attack {
+                    damage_kind: DamageKind::Normal,
+                    damage: 1,
+                },
                 range: 1,
-                targets_enemy: true,
                 consumable: false,
             },
         ),
@@ -113,10 +216,35 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
             Ability::VampireScratch,
             AbilityStats {
                 name: "Vampire Scratch".into(),
-                damage_kind: DamageKind::Normal,
-                damage: 2,
+                action: Action::Attack {
+                    damage_kind: DamageKind::Normal,
+                    damage: 2,
+                },
                 range: 1,
-                targets_enemy: true,
+                consumable: false,
+            },
+        ),
+        (
+            Ability::BigBatBite,
+            AbilityStats {
+                name: "Big Bat Bite".into(),
+                action: Action::Attack {
+                    damage_kind: DamageKind::Normal,
+                    damage: 2,
+                },
+                range: 1,
+                consumable: false,
+            },
+        ),
+        (
+            Ability::SpawnBat,
+            AbilityStats {
+                name: "Spawn Bat".into(),
+                action: Action::Spawn {
+                    enemy_kind: EnemyKind::Bat,
+                    cooldown: 3,
+                },
+                range: 1,
                 consumable: false,
             },
         ),

@@ -156,7 +156,9 @@ pub fn pathfind(
     start: Position,
     goal: Position,
     grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
+    dimensions: (usize, usize),
 ) -> Option<Vec<Position>> {
+    let (width, height) = dimensions;
     let mut frontier = BinaryHeap::new();
     let mut came_from = HashMap::new();
     let mut costs = HashMap::new();
@@ -177,9 +179,17 @@ pub fn pathfind(
         }
 
         for adjacent in &position.adjacent() {
-            match grid[adjacent.x][adjacent.y] {
-                Tile::Empty | Tile::Item(_) => (),
-                Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => continue,
+            for i in 0..width {
+                for j in 0..height {
+                    if adjacent.x + i >= LEVEL_WIDTH || adjacent.y + j >= LEVEL_HEIGHT {
+                        continue;
+                    }
+
+                    match grid[adjacent.x + i][adjacent.y + j] {
+                        Tile::Empty | Tile::Item(_) => (),
+                        Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => continue,
+                    }
+                }
             }
 
             let new_cost = costs.get(&position).unwrap() + 1;

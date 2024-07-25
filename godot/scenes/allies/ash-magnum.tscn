@@ -335,7 +335,7 @@ _data = {
 }
 
 [node name="AshMagnum" type="Ally"]
-health = 4
+max_health = 4
 speed = 4
 view_distance = 8
 
@@ -349,3 +349,5 @@ position = Vector2(8, 4)
 texture = ExtResource("1_qrawt")
 hframes = 12
 vframes = 6
+region_enabled = true
+region_rect = Rect2(0, 0, 192, 96)

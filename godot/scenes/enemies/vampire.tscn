@@ -286,11 +286,13 @@ load_path = "res://.godot/imported/enemies.png-63d2c51b330dde73c36aac68aa33914f.
 
 [node name="Vampire" type="Enemy"]
 kind = 2
-health = 5
+max_health = 5
 speed = 4
 view_distance = 10
-ability_list = 2
-trait_list = 1
+width = 1
+height = 1
+ability_list = 3
+trait_list = 2
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
