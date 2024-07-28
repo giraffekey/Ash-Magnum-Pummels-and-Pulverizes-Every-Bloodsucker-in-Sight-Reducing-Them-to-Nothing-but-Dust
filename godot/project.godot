@@ -22,15 +22,19 @@ Dialogic="*res://addons/dialogic/Core/DialogicGameHandler.gd"
 [dialogic]
 
 directories/dch_directory={
+"alukrod": "res://dialogue/characters/alukrod.dch",
 "ash-magnum": "res://dialogue/characters/ash-magnum.dch",
-"big-batty": "res://dialogue/characters/big-batty.dch"
+"big-batty": "res://dialogue/characters/big-batty.dch",
+"mysterious-man": "res://dialogue/characters/mysterious-man.dch"
 }
 directories/dtl_directory={
 "entrance-hall-attack-manual": "res://dialogue/timelines/entrance-hall-attack-manual.dtl",
 "entrance-hall-big-batty": "res://dialogue/timelines/entrance-hall-big-batty.dtl",
+"entrance-hall-big-batty-death": "res://dialogue/timelines/entrance-hall-big-batty-death.dtl",
 "entrance-hall-defeat-bat": "res://dialogue/timelines/entrance-hall-defeat-bat.dtl",
 "entrance-hall-movement-manual": "res://dialogue/timelines/entrance-hall-movement-manual.dtl",
-"entrance-hall-vampire-appears": "res://dialogue/timelines/entrance-hall-vampire-appears.dtl"
+"entrance-hall-vampire-appears": "res://dialogue/timelines/entrance-hall-vampire-appears.dtl",
+"great-hall-alukrod-intro": "res://dialogue/timelines/great-hall-alukrod-intro.dtl"
 }
 variables={}
 layout/style_list=["res://dialogue/styles/basic.tres"]

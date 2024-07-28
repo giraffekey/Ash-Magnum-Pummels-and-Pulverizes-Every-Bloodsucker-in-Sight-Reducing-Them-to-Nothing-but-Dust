@@ -1,6 +1,6 @@
 [gd_scene load_steps=19 format=3 uid="uid://wprwa3y6qg7v"]
 
-[ext_resource type="Texture2D" uid="uid://b776hvob11upd" path="res://assets/sprites/enemies.png" id="1_vckfn"]
+[ext_resource type="Texture2D" uid="uid://b776hvob11upd" path="res://assets/sprites/enemies.png" id="1_as1u1"]
 
 [sub_resource type="Animation" id="Animation_4igk5"]
 resource_name = "front_idle"
@@ -287,7 +287,7 @@ _data = {
 kind = 3
 max_health = 6
 speed = 3
-view_distance = 6
+view_distance = 8
 width = 2
 height = 2
 ability_list = 4
@@ -299,7 +299,7 @@ libraries = {
 
 [node name="Sprite" type="Sprite2D" parent="."]
 position = Vector2(16, 16)
-texture = ExtResource("1_vckfn")
+texture = ExtResource("1_as1u1")
 hframes = 12
 vframes = 4
 region_enabled = true

@@ -8,6 +8,8 @@ region = Rect2(16, 0, 16, 16)
 
 [node name="Barrel" type="Obstacle"]
 kind = 2
+width = 1
+height = 1
 
 [node name="Sprite" type="Sprite2D" parent="."]
 position = Vector2(8, 4)

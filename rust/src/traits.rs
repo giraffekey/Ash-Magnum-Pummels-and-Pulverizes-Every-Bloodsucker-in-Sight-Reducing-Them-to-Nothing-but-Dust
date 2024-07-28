@@ -2,7 +2,6 @@ use std::sync::OnceLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Trait {
-    Mist,
     SilverVulnerable,
     HolyVulnerable,
     StakeVulnerable,

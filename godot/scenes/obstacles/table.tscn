@@ -7,6 +7,9 @@ atlas = ExtResource("1_w1s5k")
 region = Rect2(32, 0, 32, 48)
 
 [node name="Table" type="Obstacle"]
+kind = 2
+width = 2
+height = 2
 
 [node name="Sprite" type="Sprite2D" parent="."]
 position = Vector2(16, 22)

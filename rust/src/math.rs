@@ -1,4 +1,4 @@
-use crate::level::{Tile, LEVEL_HEIGHT, LEVEL_WIDTH, TILE_SIZE};
+use crate::level::{Level, ObstacleKind, Tile, LEVEL_HEIGHT, LEVEL_WIDTH, TILE_SIZE};
 
 use godot::prelude::*;
 use num_integer::Roots;
@@ -156,6 +156,7 @@ pub fn pathfind(
     start: Position,
     goal: Position,
     grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
+    start_tile: Tile,
     dimensions: (usize, usize),
 ) -> Option<Vec<Position>> {
     let (width, height) = dimensions;
@@ -178,16 +179,18 @@ pub fn pathfind(
             break;
         }
 
-        for adjacent in &position.adjacent() {
+        'a: for adjacent in &position.adjacent() {
             for i in 0..width {
                 for j in 0..height {
                     if adjacent.x + i >= LEVEL_WIDTH || adjacent.y + j >= LEVEL_HEIGHT {
-                        continue;
+                        continue 'a;
                     }
 
-                    match grid[adjacent.x + i][adjacent.y + j] {
-                        Tile::Empty | Tile::Item(_) => (),
-                        Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => continue,
+                    if grid[adjacent.x + i][adjacent.y + j] != start_tile {
+                        match grid[adjacent.x + i][adjacent.y + j] {
+                            Tile::Empty | Tile::Item(_) => (),
+                            Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => continue 'a,
+                        }
                     }
                 }
             }
@@ -256,18 +259,28 @@ pub fn attack_positions(
     position: Position,
     range: u16,
     grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
+    dimensions: (usize, usize),
 ) -> Vec<(Position, u16)> {
+    let (width, height) = dimensions;
     let mut positions = Vec::new();
-    for direction in Direction::iter() {
-        for dist in 1..=range {
-            let position = match position.in_direction(direction, dist as usize) {
-                Some(position) => position,
-                None => break,
+    for i in 0..width {
+        for j in 0..height {
+            let position = Position {
+                x: position.x + i,
+                y: position.y + j,
             };
+            for direction in Direction::iter() {
+                for dist in 1..=range {
+                    let position = match position.in_direction(direction, dist as usize) {
+                        Some(position) => position,
+                        None => break,
+                    };
 
-            match grid[position.x][position.y] {
-                Tile::Empty | Tile::Item(_) => positions.push((position, dist)),
-                Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
+                    match grid[position.x][position.y] {
+                        Tile::Empty | Tile::Item(_) => positions.push((position, dist)),
+                        Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
+                    }
+                }
             }
         }
     }
@@ -344,28 +357,19 @@ impl Row {
     }
 }
 
-pub fn compute_fov(
-    origin: Position,
-    distance: u16,
-    grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
-) -> HashSet<Position> {
+pub fn compute_fov(origin: Position, distance: u16, level: &Level) -> HashSet<Position> {
     let mut visible = HashSet::new();
     visible.insert(origin);
     for cardinal in Cardinal::iter() {
         let quadrant = Quadrant::new(origin, cardinal);
         let first_row = Row::new(1, Rational32::from_integer(-1), Rational32::from_integer(1));
-        visible.extend(scan(quadrant, first_row, distance, grid));
+        visible.extend(scan(quadrant, first_row, distance, level));
     }
 
     visible
 }
 
-fn scan(
-    quadrant: Quadrant,
-    mut row: Row,
-    distance: u16,
-    grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
-) -> HashSet<Position> {
+fn scan(quadrant: Quadrant, mut row: Row, distance: u16, level: &Level) -> HashSet<Position> {
     if distance == 0 {
         return HashSet::new();
     }
@@ -376,20 +380,20 @@ fn scan(
     for tile in row.tiles() {
         let position = quadrant.transform(tile);
 
-        if is_wall(position, grid) || is_symmetric(row, tile) {
+        if is_wall(position, level) || is_symmetric(row, tile) {
             visible.insert(position);
         }
 
         match prev_position {
             Some(prev_position) => {
-                if is_wall(prev_position, grid) && !is_wall(position, grid) {
+                if is_wall(prev_position, level) && !is_wall(position, level) {
                     row.start_slope = slope(tile);
                 }
 
-                if !is_wall(prev_position, grid) && is_wall(position, grid) {
+                if !is_wall(prev_position, level) && is_wall(position, level) {
                     let mut next_row = row.next();
                     next_row.end_slope = slope(tile);
-                    visible.extend(scan(quadrant, next_row, distance - 1, grid));
+                    visible.extend(scan(quadrant, next_row, distance - 1, level));
                 }
             }
             None => (),
@@ -399,8 +403,8 @@ fn scan(
     }
 
     match prev_position {
-        Some(prev_position) if !is_wall(prev_position, grid) => {
-            visible.extend(scan(quadrant, row.next(), distance - 1, grid));
+        Some(prev_position) if !is_wall(prev_position, level) => {
+            visible.extend(scan(quadrant, row.next(), distance - 1, level));
         }
         _ => (),
     }
@@ -408,12 +412,19 @@ fn scan(
     visible
 }
 
-fn is_wall(position: Position, grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH]) -> bool {
+fn is_wall(position: Position, level: &Level) -> bool {
     if position.x >= LEVEL_WIDTH || position.y >= LEVEL_HEIGHT {
         true
     } else {
-        match grid[position.x][position.y] {
-            Tile::Obstacle(_) => true,
+        match level.grid[position.x][position.y] {
+            Tile::Obstacle(id) => {
+                let obstacle = level.get_obstacle(id);
+                let obstacle = obstacle.bind();
+                match obstacle.kind {
+                    ObstacleKind::Wall | ObstacleKind::Barrel => true,
+                    ObstacleKind::LowWall => false,
+                }
+            }
             _ => false,
         }
     }

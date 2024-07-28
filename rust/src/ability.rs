@@ -1,5 +1,4 @@
-use crate::level::EnemyKind;
-use crate::traits::Trait;
+use crate::level::{Effect, EffectStats, EnemyKind};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -43,8 +42,9 @@ pub enum Action {
         damage: u16,
         distance: u16,
     },
-    Activate {
-        trait_: Trait,
+    Effect {
+        effect: Effect,
+        stats: EffectStats,
     },
     Spawn {
         enemy_kind: EnemyKind,
@@ -57,6 +57,7 @@ pub struct AbilityStats {
     pub name: String,
     pub action: Action,
     pub range: u16,
+    pub acquirable: bool,
     pub consumable: bool,
 }
 
@@ -101,6 +102,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 2,
                 },
                 range: 2,
+                acquirable: false,
                 consumable: false,
             },
         ),
@@ -113,6 +115,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 2,
                 },
                 range: 6,
+                acquirable: false,
                 consumable: true,
             },
         ),
@@ -125,6 +128,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 2,
                 },
                 range: 6,
+                acquirable: false,
                 consumable: true,
             },
         ),
@@ -135,9 +139,10 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Push {
                     damage_kind: DamageKind::Silver,
                     damage: 2,
-                    distance: 2,
+                    distance: 4,
                 },
                 range: 2,
+                acquirable: false,
                 consumable: true,
             },
         ),
@@ -150,6 +155,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 2,
                 },
                 range: 1,
+                acquirable: false,
                 consumable: false,
             },
         ),
@@ -162,6 +168,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 2,
                 },
                 range: 4,
+                acquirable: false,
                 consumable: true,
             },
         ),
@@ -174,6 +181,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 1,
                 },
                 range: 1,
+                acquirable: false,
                 consumable: false,
             },
         ),
@@ -181,10 +189,15 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
             Ability::Mist,
             AbilityStats {
                 name: "Mist".into(),
-                action: Action::Activate {
-                    trait_: Trait::Mist,
+                action: Action::Effect {
+                    effect: Effect::Mist,
+                    stats: EffectStats {
+                        magnitude: 0,
+                        duration: 2,
+                    },
                 },
                 range: 0,
+                acquirable: false,
                 consumable: true,
             },
         ),
@@ -197,6 +210,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 1,
                 },
                 range: 1,
+                acquirable: true,
                 consumable: true,
             },
         ),
@@ -209,6 +223,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 1,
                 },
                 range: 1,
+                acquirable: false,
                 consumable: false,
             },
         ),
@@ -221,6 +236,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 2,
                 },
                 range: 1,
+                acquirable: false,
                 consumable: false,
             },
         ),
@@ -233,6 +249,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage: 2,
                 },
                 range: 1,
+                acquirable: false,
                 consumable: false,
             },
         ),
@@ -245,6 +262,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     cooldown: 3,
                 },
                 range: 1,
+                acquirable: false,
                 consumable: false,
             },
         ),

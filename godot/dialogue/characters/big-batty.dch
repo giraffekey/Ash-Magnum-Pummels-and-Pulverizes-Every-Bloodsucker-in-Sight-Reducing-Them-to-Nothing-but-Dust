@@ -15,6 +15,33 @@
 "nicknames": [""],
 "offset": Vector2(0, 0),
 "portraits": {
+"Defeated": {
+"export_overrides": {
+"image": "\"res://assets/sprites/portraits/big-batty-defeated.png\""
+},
+"mirror": false,
+"offset": Vector2(0, 0),
+"scale": 1,
+"scene": ""
+},
+"Gottem": {
+"export_overrides": {
+"image": "\"res://assets/sprites/portraits/big-batty-gottem.png\""
+},
+"mirror": false,
+"offset": Vector2(0, 0),
+"scale": 1,
+"scene": ""
+},
+"Gottem Even More": {
+"export_overrides": {
+"image": "\"res://assets/sprites/portraits/big-batty-gottem-even-more.png\""
+},
+"mirror": false,
+"offset": Vector2(0, 0),
+"scale": 1,
+"scene": ""
+},
 "Main": {
 "export_overrides": {
 "image": "\"res://assets/sprites/portraits/big-batty.png\""

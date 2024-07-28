@@ -1,6 +1,8 @@
-[gd_scene load_steps=19 format=3 uid="uid://din1vxcfs02oq"]
+[gd_scene load_steps=19 format=3 uid="uid://dvrbwf32r043p"]
 
-[sub_resource type="Animation" id="Animation_pid3o"]
+[ext_resource type="Texture2D" uid="uid://bgenvlmdwn1at" path="res://assets/sprites/allies.png" id="1_ixjbi"]
+
+[sub_resource type="Animation" id="Animation_0e7ds"]
 length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -15,7 +17,7 @@ tracks/0/keys = {
 "values": [0]
 }
 
-[sub_resource type="Animation" id="Animation_wfmjw"]
+[sub_resource type="Animation" id="Animation_oli71"]
 resource_name = "back_attack"
 length = 0.4
 tracks/0/type = "value"
@@ -31,7 +33,7 @@ tracks/0/keys = {
 "values": [28, 29, 30, 31]
 }
 
-[sub_resource type="Animation" id="Animation_ffj1f"]
+[sub_resource type="Animation" id="Animation_o33fo"]
 resource_name = "back_death"
 length = 0.4
 tracks/0/type = "value"
@@ -47,7 +49,7 @@ tracks/0/keys = {
 "values": [50, 51]
 }
 
-[sub_resource type="Animation" id="Animation_r1ic0"]
+[sub_resource type="Animation" id="Animation_vpqcb"]
 resource_name = "back_hit"
 length = 0.2
 tracks/0/type = "value"
@@ -63,7 +65,7 @@ tracks/0/keys = {
 "values": [38, 39]
 }
 
-[sub_resource type="Animation" id="Animation_ebyhf"]
+[sub_resource type="Animation" id="Animation_1lfip"]
 resource_name = "back_idle"
 length = 0.8
 loop_mode = 1
@@ -80,7 +82,7 @@ tracks/0/keys = {
 "values": [2, 3]
 }
 
-[sub_resource type="Animation" id="Animation_pk0av"]
+[sub_resource type="Animation" id="Animation_q41hp"]
 resource_name = "back_walk"
 length = 0.4
 loop_mode = 1
@@ -97,7 +99,7 @@ tracks/0/keys = {
 "values": [14, 15]
 }
 
-[sub_resource type="Animation" id="Animation_xmj7l"]
+[sub_resource type="Animation" id="Animation_5bt8x"]
 resource_name = "front_attack"
 length = 0.4
 tracks/0/type = "value"
@@ -113,7 +115,7 @@ tracks/0/keys = {
 "values": [24, 25, 26, 27]
 }
 
-[sub_resource type="Animation" id="Animation_ugmre"]
+[sub_resource type="Animation" id="Animation_b1a1g"]
 resource_name = "front_death"
 length = 0.4
 tracks/0/type = "value"
@@ -129,7 +131,7 @@ tracks/0/keys = {
 "values": [48, 49]
 }
 
-[sub_resource type="Animation" id="Animation_xuurt"]
+[sub_resource type="Animation" id="Animation_dkwiy"]
 resource_name = "front_hit"
 length = 0.2
 tracks/0/type = "value"
@@ -145,7 +147,7 @@ tracks/0/keys = {
 "values": [36, 37]
 }
 
-[sub_resource type="Animation" id="Animation_0e2uh"]
+[sub_resource type="Animation" id="Animation_hdrkj"]
 resource_name = "front_idle"
 length = 0.8
 loop_mode = 1
@@ -162,7 +164,7 @@ tracks/0/keys = {
 "values": [0, 1]
 }
 
-[sub_resource type="Animation" id="Animation_mgjnd"]
+[sub_resource type="Animation" id="Animation_ygvqm"]
 resource_name = "front_walk"
 length = 0.4
 loop_mode = 1
@@ -179,7 +181,7 @@ tracks/0/keys = {
 "values": [12, 13]
 }
 
-[sub_resource type="Animation" id="Animation_2f5vt"]
+[sub_resource type="Animation" id="Animation_77v54"]
 resource_name = "side_attack"
 length = 0.4
 tracks/0/type = "value"
@@ -195,7 +197,7 @@ tracks/0/keys = {
 "values": [32, 33, 34, 35]
 }
 
-[sub_resource type="Animation" id="Animation_icf81"]
+[sub_resource type="Animation" id="Animation_m4132"]
 resource_name = "side_death"
 length = 0.4
 tracks/0/type = "value"
@@ -211,7 +213,7 @@ tracks/0/keys = {
 "values": [52, 53]
 }
 
-[sub_resource type="Animation" id="Animation_jh21x"]
+[sub_resource type="Animation" id="Animation_0hanh"]
 resource_name = "side_hit"
 length = 0.2
 tracks/0/type = "value"
@@ -227,7 +229,7 @@ tracks/0/keys = {
 "values": [40, 41]
 }
 
-[sub_resource type="Animation" id="Animation_c86df"]
+[sub_resource type="Animation" id="Animation_p6td5"]
 resource_name = "side_idle"
 length = 0.8
 loop_mode = 1
@@ -244,7 +246,7 @@ tracks/0/keys = {
 "values": [4, 5]
 }
 
-[sub_resource type="Animation" id="Animation_gwpec"]
+[sub_resource type="Animation" id="Animation_44mkd"]
 resource_name = "side_walk"
 length = 0.4
 loop_mode = 1
@@ -261,48 +263,43 @@ tracks/0/keys = {
 "values": [16, 17]
 }
 
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_0d6pk"]
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_okk1u"]
 _data = {
-"RESET": SubResource("Animation_pid3o"),
-"back_attack": SubResource("Animation_wfmjw"),
-"back_death": SubResource("Animation_ffj1f"),
-"back_hit": SubResource("Animation_r1ic0"),
-"back_idle": SubResource("Animation_ebyhf"),
-"back_walk": SubResource("Animation_pk0av"),
-"front_attack": SubResource("Animation_xmj7l"),
-"front_death": SubResource("Animation_ugmre"),
-"front_hit": SubResource("Animation_xuurt"),
-"front_idle": SubResource("Animation_0e2uh"),
-"front_walk": SubResource("Animation_mgjnd"),
-"side_attack": SubResource("Animation_2f5vt"),
-"side_death": SubResource("Animation_icf81"),
-"side_hit": SubResource("Animation_jh21x"),
-"side_idle": SubResource("Animation_c86df"),
-"side_walk": SubResource("Animation_gwpec")
+"RESET": SubResource("Animation_0e7ds"),
+"back_attack": SubResource("Animation_oli71"),
+"back_death": SubResource("Animation_o33fo"),
+"back_hit": SubResource("Animation_vpqcb"),
+"back_idle": SubResource("Animation_1lfip"),
+"back_walk": SubResource("Animation_q41hp"),
+"front_attack": SubResource("Animation_5bt8x"),
+"front_death": SubResource("Animation_b1a1g"),
+"front_hit": SubResource("Animation_dkwiy"),
+"front_idle": SubResource("Animation_hdrkj"),
+"front_walk": SubResource("Animation_ygvqm"),
+"side_attack": SubResource("Animation_77v54"),
+"side_death": SubResource("Animation_m4132"),
+"side_hit": SubResource("Animation_0hanh"),
+"side_idle": SubResource("Animation_p6td5"),
+"side_walk": SubResource("Animation_44mkd")
 }
 
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_aapkt"]
-load_path = "res://.godot/imported/enemies.png-63d2c51b330dde73c36aac68aa33914f.ctex"
-
-[node name="Vampire" type="Enemy"]
-kind = 2
+[node name="Alukrod" type="Ally"]
+id = 2
 max_health = 6
 speed = 4
 view_distance = 10
-width = 1
-height = 1
-ability_list = 3
-trait_list = 2
+ability_list = 1
+trait_list = 1
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
-"": SubResource("AnimationLibrary_0d6pk")
+"": SubResource("AnimationLibrary_okk1u")
 }
 
 [node name="Sprite" type="Sprite2D" parent="."]
 position = Vector2(8, 4)
-texture = SubResource("CompressedTexture2D_aapkt")
+texture = ExtResource("1_ixjbi")
 hframes = 12
 vframes = 5
 region_enabled = true
-region_rect = Rect2(0, 64, 192, 80)
+region_rect = Rect2(0, 96, 192, 80)

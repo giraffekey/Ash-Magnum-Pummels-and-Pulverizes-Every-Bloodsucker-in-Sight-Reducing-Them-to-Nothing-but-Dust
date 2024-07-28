@@ -53,6 +53,7 @@ layout_mode = 2
 texture = SubResource("AtlasTexture_7gg8v")
 
 [node name="Amount" type="Label" parent="AbilityIcon1"]
+layout_mode = 0
 offset_left = 12.0
 offset_top = 13.0
 offset_right = 23.0
@@ -67,6 +68,7 @@ layout_mode = 2
 texture = SubResource("AtlasTexture_bevug")
 
 [node name="Amount" type="Label" parent="AbilityIcon2"]
+layout_mode = 0
 offset_left = 12.0
 offset_top = 13.0
 offset_right = 23.0
@@ -81,6 +83,7 @@ layout_mode = 2
 texture = SubResource("AtlasTexture_3nrpt")
 
 [node name="Amount" type="Label" parent="AbilityIcon3"]
+layout_mode = 0
 offset_left = 12.0
 offset_top = 13.0
 offset_right = 23.0
@@ -95,6 +98,7 @@ layout_mode = 2
 texture = SubResource("AtlasTexture_b6mi6")
 
 [node name="Amount" type="Label" parent="AbilityIcon4"]
+layout_mode = 0
 offset_left = 12.0
 offset_top = 13.0
 offset_right = 23.0
@@ -109,6 +113,7 @@ layout_mode = 2
 texture = SubResource("AtlasTexture_i88h6")
 
 [node name="Amount" type="Label" parent="AbilityIcon5"]
+layout_mode = 0
 offset_left = 12.0
 offset_top = 13.0
 offset_right = 23.0
@@ -123,6 +128,7 @@ layout_mode = 2
 texture = SubResource("AtlasTexture_i88h6")
 
 [node name="Amount" type="Label" parent="AbilityIcon6"]
+layout_mode = 0
 offset_left = 12.0
 offset_top = 13.0
 offset_right = 23.0
@@ -137,6 +143,7 @@ layout_mode = 2
 texture = SubResource("AtlasTexture_i88h6")
 
 [node name="Amount" type="Label" parent="AbilityIcon7"]
+layout_mode = 0
 offset_left = 12.0
 offset_top = 13.0
 offset_right = 23.0

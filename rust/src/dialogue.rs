@@ -1,5 +1,6 @@
-use crate::level::EnemyKind;
+use crate::level::{AllyId, EnemyKind, Level};
 
+use godot::engine::Sprite2D;
 use godot::prelude::*;
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -50,9 +51,19 @@ fn init_trigger_lists() -> HashMap<Room, Vec<(Vec<DialogueEvent>, String)>> {
                     vec![DialogueEvent::EnemyMoved(EnemyKind::BigBatty)],
                     "entrance-hall-big-batty".into(),
                 ),
+                (
+                    vec![DialogueEvent::EnemyKilled(EnemyKind::BigBatty)],
+                    "entrance-hall-big-batty-death".into(),
+                ),
             ],
         ),
-        (Room::GreatHall, vec![]),
+        (
+            Room::GreatHall,
+            vec![(
+                vec![DialogueEvent::LevelReady],
+                "great-hall-alukrod-intro".into(),
+            )],
+        ),
     ]
     .into()
 }
@@ -65,6 +76,7 @@ pub struct Dialogue {
     pub active: bool,
     pub events: Vec<DialogueEvent>,
     pub triggers: Vec<(Vec<DialogueEvent>, String)>,
+    pub current_timeline: String,
     base: Base<Node2D>,
 }
 
@@ -92,6 +104,7 @@ impl INode2D for Dialogue {
                         let timeline = self.next_timeline();
                         let mut dialogic = self.base().get_node_as::<Node>("../../Dialogic");
                         dialogic.call_deferred("start".into(), &[Variant::from(timeline)]);
+                        self.current_timeline = timeline.into();
                     }
 
                     self.next();
@@ -112,6 +125,16 @@ impl Dialogue {
     #[func]
     pub fn on_ended(&mut self) {
         self.active = false;
+
+        match self.current_timeline.as_str() {
+            "great-hall-alukrod-intro" => {
+                let level = self.base().get_node_as::<Level>("..");
+                let level = level.bind();
+                let mut ally = level.get_ally(AllyId::Alukrod);
+                ally.get_node_as::<Sprite2D>("Sprite").set_visible(true);
+            }
+            _ => (),
+        }
     }
 }
 

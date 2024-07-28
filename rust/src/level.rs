@@ -1,5 +1,5 @@
 use crate::ability::{abilities, ability_lists, Ability, Action, DamageKind};
-use crate::dialogue::{Dialogue, DialogueEvent};
+use crate::dialogue::{Dialogue, DialogueEvent, Room};
 use crate::math::{attack_positions, compute_fov, line_to, pathfind, Direction, Position};
 use crate::traits::{trait_lists, Trait};
 use crate::ui::{AbilityBar, InfoPanel};
@@ -15,18 +15,33 @@ use std::collections::{HashMap, HashSet};
 pub const LEVEL_WIDTH: usize = 16;
 pub const LEVEL_HEIGHT: usize = 32;
 pub const TILE_SIZE: f32 = 16.0;
+pub const DOOR_TILES: [Position; 2] = [Position { x: 7, y: 0 }, Position { x: 8, y: 0 }];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Effect {
+    Burn,
+    Mist,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EffectStats {
+    pub magnitude: u16,
+    pub duration: u16,
+}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, GodotConvert, Var, Export)]
 #[godot(via = u8)]
 pub enum AllyId {
     #[default]
     AshMagnum,
+    Alukrod,
 }
 
 impl AllyId {
     pub fn name(&self) -> String {
         match self {
             Self::AshMagnum => "Ash Magnum".into(),
+            Self::Alukrod => "Alukrod".into(),
         }
     }
 }
@@ -54,6 +69,7 @@ pub struct Ally {
     pub selected_ability: usize,
     pub has_moved: bool,
     pub has_acted: bool,
+    pub effects: HashMap<Effect, EffectStats>,
     path: Option<Vec<Position>>,
     index: usize,
     #[init(default = "front_idle".into())]
@@ -105,15 +121,15 @@ impl Ally {
         let name = name.to_string();
 
         match name.as_str() {
-            "side_whip" | "side_crossbow" | "side_hit" => self.animation = "side_idle".into(),
-            "back_whip" | "back_crossbow" | "back_hit" => self.animation = "back_idle".into(),
-            "front_whip" | "front_crossbow" | "front_hit" => self.animation = "front_idle".into(),
+            "side_attack" | "side_crossbow" | "side_hit" => self.animation = "side_idle".into(),
+            "back_attack" | "back_crossbow" | "back_hit" => self.animation = "back_idle".into(),
+            "front_attack" | "front_crossbow" | "front_hit" => self.animation = "front_idle".into(),
             "side_death" | "back_death" | "front_death" => self.base_mut().queue_free(),
             _ => (),
         }
 
         match name.as_str() {
-            "side_whip" | "side_crossbow" | "back_whip" | "back_crossbow" | "front_whip"
+            "side_attack" | "side_crossbow" | "back_attack" | "back_crossbow" | "front_attack"
             | "front_crossbow" => {
                 self.has_acted = true;
 
@@ -122,6 +138,13 @@ impl Ally {
                     .get_node_as::<Cursor>("../../../CursorLayer/Cursor");
                 let mut cursor = cursor.bind_mut();
                 cursor.can_interact = true;
+                cursor.selected = None;
+
+                let mut ability_bar = self
+                    .base()
+                    .get_node_as::<AbilityBar>("../../../UILayer/AbilityBar");
+                let mut ability_bar = ability_bar.bind_mut();
+                ability_bar.select_none();
             }
             _ => (),
         }
@@ -175,52 +198,72 @@ impl Ally {
                 self.index = 0;
                 self.has_moved = true;
 
-                match self.animation.as_str() {
-                    "side_walk" => self.animation = "side_idle".into(),
-                    "back_walk" => self.animation = "back_idle".into(),
-                    "front_walk" => self.animation = "front_idle".into(),
-                    _ => unreachable!(),
-                }
-
                 let mut level = self.base().get_node_as::<Level>("../../..");
                 let mut level = level.bind_mut();
 
-                match level.at(self.position) {
-                    Tile::Item(id) => {
-                        let mut item = level.get_item(id);
-
-                        {
-                            let item = item.bind();
-                            let ability = item.ability();
-                            match self.uses.get_mut(&ability) {
-                                Some(n) => *n += 1,
-                                None => {
-                                    self.abilities.push(ability);
-                                    self.uses.insert(ability, 1);
-                                }
-                            }
-                            level.items.remove(&id);
-                        }
-
-                        item.queue_free();
+                if DOOR_TILES.contains(&self.position) {
+                    let scene = match level.room {
+                        Room::EntranceHall => "res://scenes/levels/2-great-hall.tscn",
+                        Room::GreatHall => todo!(),
+                    };
+                    self.base()
+                        .get_tree()
+                        .unwrap()
+                        .change_scene_to_file(scene.into());
+                } else {
+                    match self.animation.as_str() {
+                        "side_walk" => self.animation = "side_idle".into(),
+                        "back_walk" => self.animation = "back_idle".into(),
+                        "front_walk" => self.animation = "front_idle".into(),
+                        _ => unreachable!(),
                     }
-                    _ => (),
+
+                    match level.at(self.position) {
+                        Tile::Item(id) => {
+                            let mut item = level.get_item(id);
+
+                            let picked_up = {
+                                let item = item.bind();
+                                let ability = item.ability();
+                                let stats = abilities().get(&ability).unwrap();
+
+                                if stats.acquirable || self.abilities.contains(&ability) {
+                                    match self.uses.get_mut(&ability) {
+                                        Some(n) => *n += 1,
+                                        None => {
+                                            self.abilities.push(ability);
+                                            self.uses.insert(ability, 1);
+                                        }
+                                    }
+                                    level.items.remove(&id);
+                                    true
+                                } else {
+                                    false
+                                }
+                            };
+
+                            if picked_up {
+                                item.queue_free();
+                            }
+                        }
+                        _ => (),
+                    }
+
+                    level.grid[self.position.x][self.position.y] = Tile::Ally(self.id);
+
+                    let mut cursor = self
+                        .base()
+                        .get_node_as::<Cursor>("../../../CursorLayer/Cursor");
+                    let mut cursor = cursor.bind_mut();
+                    cursor.can_interact = true;
+                    cursor.acting = true;
+
+                    let mut ability_bar = self
+                        .base()
+                        .get_node_as::<AbilityBar>("../../../UILayer/AbilityBar");
+                    let mut ability_bar = ability_bar.bind_mut();
+                    ability_bar.select_ally(&self);
                 }
-
-                level.grid[self.position.x][self.position.y] = Tile::Ally(self.id);
-
-                let mut cursor = self
-                    .base()
-                    .get_node_as::<Cursor>("../../../CursorLayer/Cursor");
-                let mut cursor = cursor.bind_mut();
-                cursor.can_interact = true;
-                cursor.acting = true;
-
-                let mut ability_bar = self
-                    .base()
-                    .get_node_as::<AbilityBar>("../../../UILayer/AbilityBar");
-                let mut ability_bar = ability_bar.bind_mut();
-                ability_bar.select_ally(&self);
             }
             None => (),
         }
@@ -254,7 +297,7 @@ impl Ally {
             let uses = self.uses.get_mut(&ability).unwrap();
             *uses -= 1;
 
-            if *uses == 0 {
+            if stats.acquirable && *uses == 0 {
                 self.abilities.remove(self.selected_ability);
                 self.uses.remove(&ability);
 
@@ -272,19 +315,19 @@ impl Ally {
             | Ability::VampireBite
             | Ability::WoodenStake => match self.position.direction_to(position) {
                 Direction::Left => {
-                    self.animation = "side_whip".into();
+                    self.animation = "side_attack".into();
                     self.flip_h(true);
                 }
                 Direction::Right => {
-                    self.animation = "side_whip".into();
+                    self.animation = "side_attack".into();
                     self.flip_h(false);
                 }
                 Direction::Up => {
-                    self.animation = "back_whip".into();
+                    self.animation = "back_attack".into();
                     self.flip_h(false);
                 }
                 Direction::Down => {
-                    self.animation = "front_whip".into();
+                    self.animation = "front_attack".into();
                     self.flip_h(false);
                 }
             },
@@ -323,22 +366,39 @@ impl Ally {
     }
 
     pub fn hit(&mut self, damage: u16, damage_kind: DamageKind) {
-        let damage = damage + damage_bonus(damage_kind, &self.traits);
-        self.health = self.health.checked_sub(damage).unwrap_or(0);
+        if !self.effects.contains_key(&Effect::Mist) {
+            let damage = damage + damage_bonus(damage_kind, &self.traits);
+            self.health = self.health.checked_sub(damage).unwrap_or(0);
 
-        if self.health == 0 {
-            match self.animation.as_str() {
-                "side_idle" => self.animation = "side_death".into(),
-                "back_idle" => self.animation = "back_death".into(),
-                "front_idle" => self.animation = "front_death".into(),
-                _ => unreachable!(),
+            if damage_kind == DamageKind::Fire {
+                match self.effects.get_mut(&Effect::Burn) {
+                    Some(stats) => stats.magnitude += 1,
+                    None => {
+                        self.effects.insert(
+                            Effect::Burn,
+                            EffectStats {
+                                magnitude: 1,
+                                duration: 3,
+                            },
+                        );
+                    }
+                }
             }
-        } else {
-            match self.animation.as_str() {
-                "side_idle" => self.animation = "side_hit".into(),
-                "back_idle" => self.animation = "back_hit".into(),
-                "front_idle" => self.animation = "front_hit".into(),
-                _ => unreachable!(),
+
+            if self.health == 0 {
+                match self.animation.as_str() {
+                    "side_idle" => self.animation = "side_death".into(),
+                    "back_idle" => self.animation = "back_death".into(),
+                    "front_idle" => self.animation = "front_death".into(),
+                    _ => unreachable!(),
+                }
+            } else {
+                match self.animation.as_str() {
+                    "side_idle" => self.animation = "side_hit".into(),
+                    "back_idle" => self.animation = "back_hit".into(),
+                    "front_idle" => self.animation = "front_hit".into(),
+                    _ => unreachable!(),
+                }
             }
         }
     }
@@ -404,6 +464,7 @@ pub struct Enemy {
     #[export]
     pub trait_list: u8,
     pub traits: Vec<Trait>,
+    pub effects: HashMap<Effect, EffectStats>,
     path: Option<Vec<Position>>,
     index: usize,
     current_ability: Option<(Ability, EnemyAction)>,
@@ -465,12 +526,9 @@ impl Enemy {
                 let mut level = level.bind_mut();
                 level.grid[self.position.x][self.position.y] = Tile::Empty;
                 level.enemies.remove(&self.id);
-                let i = level
-                    .turn_order
-                    .iter()
-                    .position(|(id, _)| *id == self.id)
-                    .unwrap();
-                level.turn_order.remove(i);
+                if let Some(i) = level.turn_order.iter().position(|(id, _)| *id == self.id) {
+                    level.turn_order.remove(i);
+                }
 
                 let mut dialogue = self.base().get_node_as::<Dialogue>("../../../Dialogue");
                 let mut dialogue = dialogue.bind_mut();
@@ -498,23 +556,15 @@ impl Enemy {
             Some(path) if self.index < path.len() => {
                 let position = path[self.index];
                 let mut tween = self.base_mut().create_tween().unwrap();
+                tween.tween_property(
+                    self.base().clone().upcast(),
+                    "position".into(),
+                    Variant::from(position.to_vector()),
+                    0.3,
+                );
                 tween.tween_callback(Callable::from_object_method(&self.base(), "next_position"));
 
-                if position == self.position {
-                    tween.tween_property(
-                        self.base().clone().upcast(),
-                        "position".into(),
-                        Variant::from(position.to_vector()),
-                        0.0,
-                    );
-                } else {
-                    tween.tween_property(
-                        self.base().clone().upcast(),
-                        "position".into(),
-                        Variant::from(position.to_vector()),
-                        0.3,
-                    );
-
+                if self.position != position {
                     match self.position.direction_to(position) {
                         Direction::Left => {
                             self.animation = "side_walk".into();
@@ -559,9 +609,9 @@ impl Enemy {
                 level.turn = Turn::Enemy(i + 1, false);
 
                 for (_, cooldown) in &mut self.cooldowns {
-                	if *cooldown > 0 {
-                		*cooldown -= 1;
-                	}
+                    if *cooldown > 0 {
+                        *cooldown -= 1;
+                    }
                 }
 
                 if let Some((ability, action)) = self.current_ability {
@@ -587,13 +637,13 @@ impl Enemy {
                             enemy_kind,
                             position,
                         } => {
-                        	let stats = abilities().get(&ability).unwrap();
-                        	match stats.action {
-                        		Action::Spawn { cooldown, .. } => {
-                        			self.cooldowns.insert(ability, cooldown);
-                        		}
-                        		_ => (),
-                        	}
+                            let stats = abilities().get(&ability).unwrap();
+                            match stats.action {
+                                Action::Spawn { cooldown, .. } => {
+                                    self.cooldowns.insert(ability, cooldown);
+                                }
+                                _ => (),
+                            }
 
                             level.spawn_enemy(enemy_kind, position);
 
@@ -619,10 +669,9 @@ impl Enemy {
 
     pub fn plan(
         &mut self,
-        grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
-        allies: &HashMap<AllyId, i64>,
+        level: &Level,
     ) -> (Option<Vec<Position>>, Option<(Ability, EnemyAction)>) {
-        let visible = compute_fov(self.position, self.view_distance, grid);
+        let visible = compute_fov(self.position, self.view_distance, level);
         let dimensions = (self.width as usize, self.height as usize);
 
         let mut actions = Vec::new();
@@ -633,24 +682,36 @@ impl Enemy {
                     damage_kind,
                     damage,
                 } => {
-                    for (ally_id, instance_id) in allies {
+                    for (ally_id, instance_id) in &level.allies {
                         let ally: Gd<Ally> = instance_from_id(*instance_id).unwrap().cast();
                         let ally = ally.bind();
 
                         if visible.contains(&ally.position) {
                             self.last_known_positions.insert(*ally_id, ally.position);
                             actions.extend(
-                                attack_positions(ally.position, stats.range, grid)
-                                    .iter()
-                                    .map(|(position, range)| {
-                                        (
-                                            Some(*ability),
-                                            *ally_id,
-                                            *range,
-                                            pathfind(self.position, *position, grid, dimensions),
-                                        )
-                                    })
-                                    .filter_map(|(ability, ally_id, range, path)| {
+                                attack_positions(
+                                    ally.position,
+                                    stats.range,
+                                    level.grid,
+                                    dimensions,
+                                )
+                                .iter()
+                                .map(|(position, range)| {
+                                    (
+                                        Some(*ability),
+                                        *ally_id,
+                                        *range,
+                                        pathfind(
+                                            self.position,
+                                            *position,
+                                            level.grid,
+                                            Tile::Enemy(self.id),
+                                            dimensions,
+                                        ),
+                                    )
+                                })
+                                .filter_map(
+                                    |(ability, ally_id, range, path)| {
                                         path.map(|path| {
                                             (
                                                 ability,
@@ -663,14 +724,19 @@ impl Enemy {
                                                 path,
                                             )
                                         })
-                                    }),
+                                    },
+                                ),
                             );
                         } else if let Some(last_known_position) =
                             self.last_known_positions.get(&ally_id)
                         {
-                            if let Some(path) =
-                                pathfind(self.position, *last_known_position, grid, dimensions)
-                            {
+                            if let Some(path) = pathfind(
+                                self.position,
+                                *last_known_position,
+                                level.grid,
+                                Tile::Enemy(self.id),
+                                dimensions,
+                            ) {
                                 actions.push((
                                     None,
                                     EnemyAction::Attack {
@@ -686,8 +752,8 @@ impl Enemy {
                     }
                 }
                 Action::Spawn { enemy_kind, .. } => {
-                	let cooldown_finished = *self.cooldowns.get(&ability).unwrap_or(&0) == 0;
-                	let any_visible = allies.values().any(|instance_id| {
+                    let cooldown_finished = *self.cooldowns.get(&ability).unwrap_or(&0) == 0;
+                    let any_visible = level.allies.values().any(|instance_id| {
                         let ally: Gd<Ally> = instance_from_id(*instance_id).unwrap().cast();
                         let ally = ally.bind();
                         visible.contains(&ally.position)
@@ -701,7 +767,7 @@ impl Enemy {
                                     y: self.position.y + j,
                                 };
                                 for adjacent in position.adjacent() {
-                                    match grid[adjacent.x][adjacent.y] {
+                                    match level.grid[adjacent.x][adjacent.y] {
                                         Tile::Empty | Tile::Item(_) => actions.push((
                                             Some(*ability),
                                             EnemyAction::Spawn {
@@ -741,9 +807,11 @@ impl Enemy {
                             damage: b_damage,
                         },
                     ) => {
-                        let a_ally: Gd<Ally> = instance_from_id(allies[a_ally_id]).unwrap().cast();
+                        let a_ally: Gd<Ally> =
+                            instance_from_id(level.allies[a_ally_id]).unwrap().cast();
                         let a_ally = a_ally.bind();
-                        let b_ally: Gd<Ally> = instance_from_id(allies[b_ally_id]).unwrap().cast();
+                        let b_ally: Gd<Ally> =
+                            instance_from_id(level.allies[b_ally_id]).unwrap().cast();
                         let b_ally = b_ally.bind();
 
                         let a_damage = a_damage + damage_bonus(*a_damage_kind, &a_ally.traits);
@@ -836,28 +904,72 @@ impl Enemy {
     }
 
     pub fn hit(&mut self, damage: u16, damage_kind: DamageKind) {
-        let damage = damage + damage_bonus(damage_kind, &self.traits);
-        self.health = self.health.checked_sub(damage).unwrap_or(0);
+        if !self.effects.contains_key(&Effect::Mist) {
+            let damage = damage + damage_bonus(damage_kind, &self.traits);
+            self.health = self.health.checked_sub(damage).unwrap_or(0);
 
-        if self.health == 0 {
-            match self.animation.as_str() {
-                "side_idle" => self.animation = "side_death".into(),
-                "back_idle" => self.animation = "back_death".into(),
-                "front_idle" => self.animation = "front_death".into(),
-                _ => unreachable!(),
+            if damage_kind == DamageKind::Fire {
+                match self.effects.get_mut(&Effect::Burn) {
+                    Some(stats) => stats.magnitude += 1,
+                    None => {
+                        self.effects.insert(
+                            Effect::Burn,
+                            EffectStats {
+                                magnitude: 1,
+                                duration: 3,
+                            },
+                        );
+                    }
+                }
             }
-        } else {
-            match self.animation.as_str() {
-                "side_idle" => self.animation = "side_hit".into(),
-                "back_idle" => self.animation = "back_hit".into(),
-                "front_idle" => self.animation = "front_hit".into(),
-                _ => unreachable!(),
+
+            if self.health == 0 {
+                match self.animation.as_str() {
+                    "side_idle" => self.animation = "side_death".into(),
+                    "back_idle" => self.animation = "back_death".into(),
+                    "front_idle" => self.animation = "front_death".into(),
+                    _ => unreachable!(),
+                }
+            } else {
+                match self.animation.as_str() {
+                    "side_idle" => self.animation = "side_hit".into(),
+                    "back_idle" => self.animation = "back_hit".into(),
+                    "front_idle" => self.animation = "front_hit".into(),
+                    _ => unreachable!(),
+                }
             }
         }
     }
 
-    pub fn push(&mut self, distance: u16) {
-        todo!()
+    pub fn push(&mut self, level: &mut Level, direction: Direction, distance: u16) {
+        let mut position = self.position;
+        for dist in 1..=distance {
+            let pos = match self.position.in_direction(direction, dist as usize) {
+                Some(pos) => pos,
+                None => break,
+            };
+
+            match level.grid[pos.x][pos.y] {
+                Tile::Empty | Tile::Item(_) => position = pos,
+                Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
+            }
+        }
+
+        for i in 0..self.width as usize {
+            for j in 0..self.height as usize {
+                level.grid[self.position.x + i][self.position.y + j] = Tile::Empty;
+                level.grid[position.x + i][position.y + j] = Tile::Enemy(self.id);
+            }
+        }
+        self.position = position;
+
+        let mut tween = self.base_mut().create_tween().unwrap();
+        tween.tween_property(
+            self.base().clone().upcast(),
+            "position".into(),
+            Variant::from(position.to_vector()),
+            0.3,
+        );
     }
 }
 
@@ -882,6 +994,7 @@ pub type ObstacleId = u16;
 pub enum ObstacleKind {
     #[default]
     Wall,
+    LowWall,
     Barrel,
 }
 
@@ -892,6 +1005,10 @@ pub struct Obstacle {
     pub position: Position,
     #[export]
     pub kind: ObstacleKind,
+    #[export]
+    pub width: u16,
+    #[export]
+    pub height: u16,
     base: Base<Node2D>,
 }
 
@@ -934,7 +1051,7 @@ impl Item {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum Tile {
     #[default]
     Empty,
@@ -954,6 +1071,8 @@ pub enum Turn {
 #[derive(GodotClass)]
 #[class(init, base=Node2D)]
 pub struct Level {
+    #[export]
+    pub room: Room,
     pub grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
     pub turn: Turn,
     pub turn_order: Vec<(EnemyId, u16)>,
@@ -974,10 +1093,11 @@ impl INode2D for Level {
     fn ready(&mut self) {
         let allies = self.base().get_node_as::<Node2D>("UnitLayer/Allies");
         for child in allies.get_children().iter_shared() {
-            let mut ally: Gd<Ally> = child.cast();
-            let instance_id = ally.instance_id();
-            let position = Position::from_vector(ally.get_position());
-            let mut ally = ally.bind_mut();
+            let mut ally_node: Gd<Ally> = child.cast();
+            let instance_id = ally_node.instance_id();
+            let position = Position::from_vector(ally_node.get_position());
+
+            let mut ally = ally_node.bind_mut();
             self.allies.insert(ally.id, instance_id.to_i64());
 
             ally.position = position;
@@ -995,6 +1115,14 @@ impl INode2D for Level {
                     let mut info_panel = self.base().get_node_as::<InfoPanel>("UILayer/InfoPanel");
                     let mut info_panel = info_panel.bind_mut();
                     info_panel.select_ally(id, self);
+                }
+                AllyId::Alukrod => {
+                    drop(ally);
+                    if self.room == Room::GreatHall {
+                        ally_node
+                            .get_node_as::<Sprite2D>("Sprite")
+                            .set_visible(false);
+                    }
                 }
             }
         }
@@ -1035,7 +1163,15 @@ impl INode2D for Level {
 
             let mut obstacle = obstacle.bind_mut();
             obstacle.position = position;
-            self.grid[position.x][position.y] = Tile::Obstacle(self.obstacle_id);
+
+            for i in 0..obstacle.width as usize {
+                for j in 0..obstacle.height as usize {
+                    if position.x + i < LEVEL_WIDTH && position.y + j < LEVEL_HEIGHT {
+                        self.grid[position.x + i][position.y + j] =
+                            Tile::Obstacle(self.obstacle_id);
+                    }
+                }
+            }
 
             obstacle.id = self.obstacle_id;
             self.obstacle_id += 1;
@@ -1121,6 +1257,24 @@ impl INode2D for Level {
                                 self.base().get_node_as::<AbilityBar>("UILayer/AbilityBar");
                             let mut ability_bar = ability_bar.bind_mut();
                             ability_bar.select_none();
+
+                            for enemy_id in self.enemies.keys() {
+                                let mut enemy = self.get_enemy(*enemy_id);
+                                let mut enemy = enemy.bind_mut();
+                                for (effect, mut stats) in enemy.effects.clone() {
+                                    match effect {
+                                        Effect::Burn => {
+                                            enemy.hit(stats.magnitude, DamageKind::Normal)
+                                        }
+                                        _ => (),
+                                    }
+                                    stats.duration -= 1;
+                                    if stats.duration == 0 {
+                                        enemy.effects.remove(&effect);
+                                    }
+                                    enemy.effects.insert(effect, stats);
+                                }
+                            }
                         }
 
                         if i < self.turn_order.len() {
@@ -1130,10 +1284,10 @@ impl INode2D for Level {
                             match enemy.animation.as_str() {
                                 "side_death" | "front_death" | "back_death" => (),
                                 _ => {
-                                    let (path, ability) = enemy.plan(self.grid, &self.allies);
+                                    let (path, ability) = enemy.plan(self);
 
                                     if let Some(path) = path {
-                                        let position = path.last().unwrap();
+                                        let position = *path.last().unwrap();
 
                                         for i in 0..enemy.width as usize {
                                             for j in 0..enemy.height as usize {
@@ -1162,6 +1316,33 @@ impl INode2D for Level {
                                 let mut ally = ally.bind_mut();
                                 ally.has_moved = false;
                                 ally.has_acted = false;
+
+                                for (effect, mut stats) in ally.effects.clone() {
+                                    match effect {
+                                        Effect::Burn => {
+                                            ally.hit(stats.magnitude, DamageKind::Normal)
+                                        }
+                                        _ => (),
+                                    }
+                                    stats.duration -= 1;
+                                    if stats.duration == 0 {
+                                        ally.effects.remove(&effect);
+                                    }
+                                    ally.effects.insert(effect, stats);
+                                }
+
+                                match ally.id {
+                                    AllyId::AshMagnum => {
+                                        let mut cursor =
+                                            self.base().get_node_as::<Cursor>("CursorLayer/Cursor");
+                                        cursor.set_position(
+                                            ally.position.to_vector() + Vector2::new(8.0, 8.0),
+                                        );
+                                        let mut cursor = cursor.bind_mut();
+                                        cursor.position = ally.position;
+                                    }
+                                    _ => (),
+                                }
                             }
 
                             let path = self.base().get_node_as::<Path>("PathLayer/Path");
@@ -1221,7 +1402,7 @@ impl Level {
         for ally_id in self.allies.keys() {
             let ally = self.get_ally(*ally_id);
             let ally = ally.bind();
-            visible.extend(compute_fov(ally.position, ally.view_distance, self.grid));
+            visible.extend(compute_fov(ally.position, ally.view_distance, self));
         }
 
         for ally_id in self.allies.keys() {
@@ -1259,7 +1440,13 @@ impl Level {
         let mut ally = self.get_ally(ally_id);
         let mut ally = ally.bind_mut();
         if !ally.has_moved {
-            match pathfind(ally.position, position, self.grid, (1, 1)) {
+            match pathfind(
+                ally.position,
+                position,
+                self.grid,
+                Tile::Ally(ally.id),
+                (1, 1),
+            ) {
                 Some(path) if !path.is_empty() && path.len() as u16 <= ally.speed => {
                     self.grid[ally.position.x][ally.position.y] = Tile::Empty;
                     ally.follow_path(path);
@@ -1271,13 +1458,11 @@ impl Level {
         false
     }
 
-    pub fn attack_enemy(&mut self, ally_id: AllyId, enemy_id: EnemyId) -> bool {
+    pub fn use_ability(&mut self, ally_id: AllyId, enemy_id: Option<EnemyId>) -> bool {
         let mut ally = self.get_ally(ally_id);
         let mut ally = ally.bind_mut();
-        let mut enemy = self.get_enemy(enemy_id);
-        let mut enemy = enemy.bind_mut();
 
-        if !ally.has_acted {
+        if !ally.has_acted && !ally.effects.contains_key(&Effect::Mist) {
             let stats = abilities().get(ally.current_ability()).unwrap();
             match stats.action {
                 Action::Attack {
@@ -1289,40 +1474,48 @@ impl Level {
                     damage,
                     ..
                 } => {
-                    for i in 0..enemy.width as usize {
-                        for j in 0..enemy.height as usize {
-                            let position = Position {
-                                x: enemy.position.x + i,
-                                y: enemy.position.y + j,
-                            };
-                            match line_to(ally.position, position, self.grid) {
-                                Some(path) if path.len() as u16 <= stats.range => {
-                                    ally.use_ability(position);
-                                    enemy.hit(damage, damage_kind);
+                    if let Some(enemy_id) = enemy_id {
+                        let mut enemy = self.get_enemy(enemy_id);
+                        let mut enemy = enemy.bind_mut();
+                        for i in 0..enemy.width as usize {
+                            for j in 0..enemy.height as usize {
+                                let position = Position {
+                                    x: enemy.position.x + i,
+                                    y: enemy.position.y + j,
+                                };
+                                match line_to(ally.position, position, self.grid) {
+                                    Some(path) if path.len() as u16 <= stats.range => {
+                                        ally.use_ability(position);
+                                        enemy.hit(damage, damage_kind);
+                                        enemy.last_known_positions.insert(ally.id, ally.position);
 
-                                    match damage_kind {
-                                        DamageKind::LifeSteal => ally.heal(damage),
-                                        _ => (),
-                                    }
-
-                                    match stats.action {
-                                        Action::Push { distance, .. } => {
-                                            enemy.push(distance);
+                                        match damage_kind {
+                                            DamageKind::LifeSteal => ally.heal(damage),
+                                            _ => (),
                                         }
-                                        _ => (),
-                                    }
 
-                                    return true;
+                                        match stats.action {
+                                            Action::Push { distance, .. } => {
+                                                let direction =
+                                                    ally.position.direction_to(enemy.position);
+                                                enemy.push(self, direction, distance);
+                                            }
+                                            _ => (),
+                                        }
+
+                                        return true;
+                                    }
+                                    _ => (),
                                 }
-                                _ => (),
                             }
                         }
                     }
                 }
-                Action::Activate { trait_ } => {
+                Action::Effect { effect, stats } => {
                     let position = ally.position;
                     ally.use_ability(position);
-                    ally.traits.push(trait_);
+                    ally.effects.insert(effect, stats);
+                    println!("{:?}", ally.effects);
                     return true;
                 }
                 _ => unreachable!(),
@@ -1489,28 +1682,57 @@ impl ISprite2D for Cursor {
 
             if input.is_action_just_pressed("select".into()) {
                 match level.at(self.position) {
-                    Tile::Empty | Tile::Item(_) if !self.acting => {
+                    Tile::Empty | Tile::Item(_) => {
                         if let Some(selected) = self.selected {
-                            if level.move_ally(selected, self.position) {
-                                path_node.clear_path();
-                                self.can_interact = false;
+                            if self.acting {
+                                if level.use_ability(selected, None) {
+                                    path_node.clear_path();
+                                    self.can_interact = false;
+                                    self.acting = false;
+
+                                    let mut info_panel = self
+                                        .base()
+                                        .get_node_as::<InfoPanel>("../../UILayer/InfoPanel");
+                                    let mut info_panel = info_panel.bind_mut();
+                                    info_panel.deselect_tile();
+                                }
+                            } else {
+                                if level.move_ally(selected, self.position) {
+                                    path_node.clear_path();
+                                    self.can_interact = false;
+                                }
                             }
                         }
                     }
-                    Tile::Ally(id) => {
-                        self.selected = Some(id);
+                    Tile::Ally(id) => match self.selected {
+                        Some(selected) if selected == id => {
+                            if level.use_ability(selected, None) {
+                                path_node.clear_path();
+                                self.can_interact = false;
+                                self.acting = false;
 
-                        let ally = level.get_ally(id);
-                        let ally = ally.bind();
-                        if ally.has_moved {
-                            self.acting = true;
+                                let mut info_panel = self
+                                    .base()
+                                    .get_node_as::<InfoPanel>("../../UILayer/InfoPanel");
+                                let mut info_panel = info_panel.bind_mut();
+                                info_panel.deselect_tile();
+                            }
                         }
+                        _ => {
+                            let ally = level.get_ally(id);
+                            let ally = ally.bind();
 
-                        ability_bar.select_ally(&ally);
-                    }
+                            if !ally.has_acted {
+                                self.acting = ally.has_moved;
+
+                                self.selected = Some(id);
+                                ability_bar.select_ally(&ally);
+                            }
+                        }
+                    },
                     Tile::Enemy(id) if self.acting => {
                         if let Some(selected) = self.selected {
-                            if level.attack_enemy(selected, id) {
+                            if level.use_ability(selected, Some(id)) {
                                 path_node.clear_path();
                                 self.can_interact = false;
                                 self.acting = false;
@@ -1536,8 +1758,13 @@ impl ISprite2D for Cursor {
                                 if self.acting {
                                     path_node.set_path(vec![self.position], PathKind::Attack);
                                 } else {
-                                    match pathfind(ally.position, self.position, level.grid, (1, 1))
-                                    {
+                                    match pathfind(
+                                        ally.position,
+                                        self.position,
+                                        level.grid,
+                                        Tile::Ally(ally.id),
+                                        (1, 1),
+                                    ) {
                                         Some(path) if path.len() as u16 <= ally.speed => {
                                             path_node.set_path(path, PathKind::Move);
                                         }
@@ -1549,7 +1776,7 @@ impl ISprite2D for Cursor {
                             }
                         }
                     }
-                    Tile::Enemy(id) if self.acting => {
+                    Tile::Enemy(_) if self.acting => {
                         if let Some(selected) = self.selected {
                             let ally = level.get_ally(selected);
                             let ally = ally.bind();
@@ -1557,23 +1784,12 @@ impl ISprite2D for Cursor {
                             let stats = abilities().get(ally.current_ability()).unwrap();
                             match stats.action {
                                 Action::Attack { .. } | Action::Push { .. } => {
-                                    let enemy = level.get_enemy(id);
-                                    let enemy = enemy.bind();
-
-                                    for i in 0..enemy.width as usize {
-                                        for j in 0..enemy.height as usize {
-                                            let position = Position {
-                                                x: self.position.x + i,
-                                                y: self.position.y + j,
-                                            };
-                                            match line_to(ally.position, position, level.grid) {
-                                                Some(path) if path.len() as u16 <= stats.range => {
-                                                    path_node.set_path(path, PathKind::Attack);
-                                                }
-                                                _ => path_node
-                                                    .set_path(vec![position], PathKind::Attack),
-                                            }
+                                    match line_to(ally.position, self.position, level.grid) {
+                                        Some(path) if path.len() as u16 <= stats.range => {
+                                            path_node.set_path(path, PathKind::Attack);
                                         }
+                                        _ => path_node
+                                            .set_path(vec![self.position], PathKind::Attack),
                                     }
                                 }
                                 _ => path_node.set_path(vec![self.position], PathKind::Attack),
@@ -1649,7 +1865,7 @@ impl Cursor {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PathKind {
     Move,
     Attack,
@@ -1672,7 +1888,7 @@ impl Path {
         self.clear_path();
 
         let texture = load::<Texture2D>("res://assets/sprites/cursor.png");
-        for position in path {
+        for position in &path {
             let mut sprite = Sprite2D::new_alloc();
 
             let mut atlas = AtlasTexture::new_gd();

@@ -1,6 +1,6 @@
 use crate::ability::{abilities, Ability, Action, DamageKind};
 use crate::dialogue::Dialogue;
-use crate::level::{Ally, AllyId, EnemyId, ItemId, ItemKind, Level};
+use crate::level::{Ally, AllyId, Effect, EnemyId, ItemId, ItemKind, Level};
 use crate::traits::Trait;
 
 use godot::engine::{AtlasTexture, HBoxContainer, IHBoxContainer, Label, TextureRect};
@@ -148,7 +148,6 @@ impl InfoPanel {
 
 fn trait_description(trait_: Trait) -> String {
     match trait_ {
-        Trait::Mist => "Mist".into(),
         Trait::SilverVulnerable => "Vulnerable to silver".into(),
         Trait::HolyVulnerable => "Vulnerable to holy".into(),
         Trait::StakeVulnerable => "Vulnerable to stakes".into(),
@@ -184,8 +183,8 @@ fn action_description(action: Action) -> String {
             DamageKind::Stake => format!("Insta-kill a vampire, push {}", distance),
             DamageKind::Sunlight => format!("{} sunlight damage, push {}", damage, distance),
         },
-        Action::Activate { trait_ } => match trait_ {
-            Trait::Mist => "Transform into mist".into(),
+        Action::Effect { effect, .. } => match effect {
+            Effect::Mist => "Transform into mist".into(),
             _ => unreachable!(),
         },
         _ => unreachable!(),
@@ -359,7 +358,7 @@ impl AbilityIcon {
 
                 let stats = abilities().get(ability).unwrap();
                 let mut amount = self.base().get_node_as::<Label>("Amount");
-                amount.set_visible(stats.consumable && uses > 0);
+                amount.set_visible(stats.consumable);
                 amount.set_text(uses.to_string().into());
             }
             None => self.base_mut().set_visible(false),
