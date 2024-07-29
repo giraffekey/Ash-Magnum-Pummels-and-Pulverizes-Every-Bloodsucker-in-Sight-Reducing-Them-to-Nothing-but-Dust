@@ -59,6 +59,7 @@ pub struct AbilityStats {
     pub range: u16,
     pub acquirable: bool,
     pub consumable: bool,
+    pub persistent: bool,
 }
 
 pub fn ability_lists() -> &'static Vec<Vec<(Ability, u16)>> {
@@ -104,6 +105,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 2,
                 acquirable: false,
                 consumable: false,
+                persistent: false,
             },
         ),
         (
@@ -117,6 +119,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 6,
                 acquirable: false,
                 consumable: true,
+                persistent: true,
             },
         ),
         (
@@ -130,6 +133,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 6,
                 acquirable: false,
                 consumable: true,
+                persistent: true,
             },
         ),
         (
@@ -144,6 +148,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 2,
                 acquirable: false,
                 consumable: true,
+                persistent: false,
             },
         ),
         (
@@ -157,6 +162,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 1,
                 acquirable: false,
                 consumable: false,
+                persistent: false,
             },
         ),
         (
@@ -167,9 +173,10 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                     damage_kind: DamageKind::Fire,
                     damage: 2,
                 },
-                range: 4,
+                range: 6,
                 acquirable: false,
                 consumable: true,
+                persistent: false,
             },
         ),
         (
@@ -183,6 +190,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 1,
                 acquirable: false,
                 consumable: false,
+                persistent: false,
             },
         ),
         (
@@ -199,6 +207,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 0,
                 acquirable: false,
                 consumable: true,
+                persistent: false,
             },
         ),
         (
@@ -212,6 +221,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 1,
                 acquirable: true,
                 consumable: true,
+                persistent: true,
             },
         ),
         (
@@ -225,6 +235,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 1,
                 acquirable: false,
                 consumable: false,
+                persistent: false,
             },
         ),
         (
@@ -238,6 +249,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 1,
                 acquirable: false,
                 consumable: false,
+                persistent: false,
             },
         ),
         (
@@ -251,6 +263,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 1,
                 acquirable: false,
                 consumable: false,
+                persistent: false,
             },
         ),
         (
@@ -264,6 +277,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 range: 1,
                 acquirable: false,
                 consumable: false,
+                persistent: false,
             },
         ),
     ]

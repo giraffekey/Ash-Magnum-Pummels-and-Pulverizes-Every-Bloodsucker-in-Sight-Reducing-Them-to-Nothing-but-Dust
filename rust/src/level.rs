@@ -198,18 +198,48 @@ impl Ally {
                 self.index = 0;
                 self.has_moved = true;
 
-                let mut level = self.base().get_node_as::<Level>("../../..");
-                let mut level = level.bind_mut();
+                let mut level_node = self.base().get_node_as::<Level>("../../..");
+                let mut level = level_node.bind_mut();
 
                 if DOOR_TILES.contains(&self.position) {
                     let scene = match level.room {
                         Room::EntranceHall => "res://scenes/levels/2-great-hall.tscn",
                         Room::GreatHall => todo!(),
                     };
+                    let scene = load::<PackedScene>(scene);
+                    let mut next_level: Gd<Level> = scene.instantiate().unwrap().cast();
+
+                    {
+                        let mut next_level = next_level.bind_mut();
+                        for ally_id in level.allies.keys() {
+                            let (abilities, uses) = if self.id == *ally_id {
+                                (self.abilities.clone(), self.uses.clone())
+                            } else {
+                                let ally = level.get_ally(*ally_id);
+                                let ally = ally.bind();
+                                (ally.abilities.clone(), ally.uses.clone())
+                            };
+                            let inventory = abilities
+                                .iter()
+                                .map(|ability| (*ability, uses[ability]))
+                                .collect();
+                            next_level.inventory.insert(*ally_id, inventory);
+                        }
+                    }
+
                     self.base()
                         .get_tree()
                         .unwrap()
-                        .change_scene_to_file(scene.into());
+                        .get_root()
+                        .unwrap()
+                        .add_child(next_level.clone().upcast());
+                    self.base()
+                        .get_tree()
+                        .unwrap()
+                        .set_current_scene(next_level.upcast());
+
+                    drop(level);
+                    level_node.queue_free();
                 } else {
                     match self.animation.as_str() {
                         "side_walk" => self.animation = "side_idle".into(),
@@ -351,12 +381,13 @@ impl Ally {
                     }
                 }
             }
-            Ability::Mist => match self.animation.as_str() {
-                "side_idle" => self.animation = "side_mist".into(),
-                "back_idle" => self.animation = "back_mist".into(),
-                "front_idle" => self.animation = "front_mist".into(),
-                _ => unreachable!(),
-            },
+            Ability::Mist => self.animation = "front_attack".into(),
+            // Ability::Mist => match self.animation.as_str() {
+            //     "side_idle" => self.animation = "side_mist".into(),
+            //     "back_idle" => self.animation = "back_mist".into(),
+            //     "front_idle" => self.animation = "front_mist".into(),
+            //     _ => unreachable!(),
+            // },
             _ => unreachable!(),
         }
     }
@@ -524,7 +555,13 @@ impl Enemy {
             "side_death" | "back_death" | "front_death" => {
                 let mut level = self.base().get_node_as::<Level>("../../..");
                 let mut level = level.bind_mut();
-                level.grid[self.position.x][self.position.y] = Tile::Empty;
+
+                for i in 0..self.width as usize {
+                    for j in 0..self.height as usize {
+                        level.grid[self.position.x + i][self.position.y + j] = Tile::Empty;
+                    }
+                }
+
                 level.enemies.remove(&self.id);
                 if let Some(i) = level.turn_order.iter().position(|(id, _)| *id == self.id) {
                     level.turn_order.remove(i);
@@ -1078,6 +1115,7 @@ pub struct Level {
     pub turn_order: Vec<(EnemyId, u16)>,
     pub spawn_queue: Vec<EnemyId>,
     pub allies: HashMap<AllyId, i64>,
+    pub inventory: HashMap<AllyId, Vec<(Ability, u16)>>,
     pub enemy_id: EnemyId,
     pub enemies: HashMap<EnemyId, i64>,
     pub obstacle_id: ObstacleId,
@@ -1103,6 +1141,18 @@ impl INode2D for Level {
             ally.position = position;
             self.grid[position.x][position.y] = Tile::Ally(ally.id);
 
+            for (ability, uses) in self.inventory.get(&ally.id).unwrap_or(&Vec::new()) {
+                let stats = abilities().get(&ability).unwrap();
+                if stats.persistent {
+                    if ally.abilities.contains(ability) {
+                        ally.uses.insert(*ability, *uses);
+                    } else {
+                        ally.abilities.push(*ability);
+                        ally.uses.insert(*ability, *uses);
+                    }
+                }
+            }
+
             match ally.id {
                 AllyId::AshMagnum => {
                     let mut cursor = self.base().get_node_as::<Cursor>("CursorLayer/Cursor");
@@ -1117,15 +1167,16 @@ impl INode2D for Level {
                     info_panel.select_ally(id, self);
                 }
                 AllyId::Alukrod => {
-                    drop(ally);
-                    if self.room == Room::GreatHall {
-                        ally_node
-                            .get_node_as::<Sprite2D>("Sprite")
-                            .set_visible(false);
-                    }
+                    // drop(ally);
+                    // if self.room == Room::GreatHall {
+                    //     ally_node
+                    //         .get_node_as::<Sprite2D>("Sprite")
+                    //         .set_visible(false);
+                    // }
                 }
             }
         }
+        self.inventory.clear();
 
         let enemies = self.base().get_node_as::<Node2D>("UnitLayer/Enemies");
         let mut turn_order = Vec::new();
@@ -1271,8 +1322,9 @@ impl INode2D for Level {
                                     stats.duration -= 1;
                                     if stats.duration == 0 {
                                         enemy.effects.remove(&effect);
+                                    } else {
+                                        enemy.effects.insert(effect, stats);
                                     }
-                                    enemy.effects.insert(effect, stats);
                                 }
                             }
                         }
@@ -1327,8 +1379,9 @@ impl INode2D for Level {
                                     stats.duration -= 1;
                                     if stats.duration == 0 {
                                         ally.effects.remove(&effect);
+                                    } else {
+                                        ally.effects.insert(effect, stats);
                                     }
-                                    ally.effects.insert(effect, stats);
                                 }
 
                                 match ally.id {
@@ -1515,7 +1568,6 @@ impl Level {
                     let position = ally.position;
                     ally.use_ability(position);
                     ally.effects.insert(effect, stats);
-                    println!("{:?}", ally.effects);
                     return true;
                 }
                 _ => unreachable!(),
@@ -1538,6 +1590,7 @@ impl Level {
 
         {
             let mut enemy = enemy.bind_mut();
+            enemy.id = self.enemy_id;
             enemy.position = position;
 
             for i in 0..enemy.width as usize {

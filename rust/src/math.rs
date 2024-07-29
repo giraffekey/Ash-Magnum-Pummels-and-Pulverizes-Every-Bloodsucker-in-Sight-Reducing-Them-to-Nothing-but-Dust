@@ -265,6 +265,9 @@ pub fn attack_positions(
     let mut positions = Vec::new();
     for i in 0..width {
         for j in 0..height {
+            if position.x + i >= LEVEL_WIDTH || position.y + j >= LEVEL_HEIGHT {
+                continue;
+            }
             let position = Position {
                 x: position.x + i,
                 y: position.y + j,

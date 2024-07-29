@@ -1,9 +1,14 @@
-[gd_scene load_steps=21 format=3 uid="uid://bwjeqjif5fi2j"]
+[gd_scene load_steps=27 format=3 uid="uid://bwjeqjif5fi2j"]
 
+[ext_resource type="AudioStream" uid="uid://0mvtnayhdbm2" path="res://assets/audio/epic-metal-dubstep-cinematic-144716.mp3" id="1_2r01q"]
 [ext_resource type="Texture2D" uid="uid://bo38a751l4bj5" path="res://assets/sprites/tileset.png" id="1_8b6sa"]
+[ext_resource type="AudioStream" uid="uid://dk4uaorus77d7" path="res://assets/audio/metal-gear-136567.mp3" id="2_e6776"]
+[ext_resource type="Script" path="res://scripts/audio.gd" id="2_rvfb6"]
+[ext_resource type="AudioStream" uid="uid://bawxjwqqrcw4c" path="res://assets/audio/hammer-of-witches-doom-metal-power-226459.mp3" id="3_h8g3g"]
 [ext_resource type="Texture2D" uid="uid://djwprbsqo6p6g" path="res://assets/sprites/cursor.png" id="3_jclbh"]
 [ext_resource type="PackedScene" uid="uid://bwa24gghet860" path="res://scenes/allies/ash-magnum.tscn" id="3_u1du5"]
 [ext_resource type="PackedScene" uid="uid://dlcfb457sarlx" path="res://scenes/items/iron_bolt.tscn" id="4_t4bko"]
+[ext_resource type="AudioStream" uid="uid://b71303881cke1" path="res://assets/audio/metal-dark-matter-111451.mp3" id="4_v8602"]
 [ext_resource type="PackedScene" uid="uid://cre0s554bldtx" path="res://scenes/enemies/bat.tscn" id="4_ycgi3"]
 [ext_resource type="PackedScene" uid="uid://bx2fp4kss2spt" path="res://scenes/obstacles/column.tscn" id="5_3s5kb"]
 [ext_resource type="PackedScene" uid="uid://erwwubxunqxy" path="res://scenes/items/silver_bolt.tscn" id="5_5aghk"]
@@ -14,6 +19,17 @@
 [ext_resource type="PackedScene" uid="uid://wprwa3y6qg7v" path="res://scenes/enemies/big-batty.tscn" id="10_78jpb"]
 [ext_resource type="PackedScene" uid="uid://c6oipflcoskb2" path="res://scenes/info_panel.tscn" id="12_fodo1"]
 [ext_resource type="Texture2D" uid="uid://bua6evv3hox53" path="res://assets/sprites/obstacles.png" id="14_mtpbp"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_g27u3"]
+streams_count = 4
+stream_0/stream = ExtResource("1_2r01q")
+stream_0/weight = 1.0
+stream_1/stream = ExtResource("3_h8g3g")
+stream_1/weight = 1.0
+stream_2/stream = ExtResource("4_v8602")
+stream_2/weight = 1.0
+stream_3/stream = ExtResource("2_e6776")
+stream_3/weight = 1.0
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_4yewu"]
 texture = ExtResource("1_8b6sa")
@@ -70,9 +86,13 @@ atlas = ExtResource("3_jclbh")
 region = Rect2(0, 0, 16, 16)
 
 [node name="Level" type="Level"]
-room = 1
 
 [node name="Dialogue" type="Dialogue" parent="."]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = SubResource("AudioStreamRandomizer_g27u3")
+autoplay = true
+script = ExtResource("2_rvfb6")
 
 [node name="MapLayer" type="CanvasLayer" parent="."]
 layer = -8
@@ -167,11 +187,17 @@ position = Vector2(160, 176)
 [node name="Bat7" parent="UnitLayer/Enemies" instance=ExtResource("4_ycgi3")]
 position = Vector2(176, 142)
 
+[node name="Bat8" parent="UnitLayer/Enemies" instance=ExtResource("4_ycgi3")]
+position = Vector2(16, 144)
+
+[node name="Bat9" parent="UnitLayer/Enemies" instance=ExtResource("4_ycgi3")]
+position = Vector2(128, 208)
+
 [node name="Vampire1" parent="UnitLayer/Enemies" instance=ExtResource("6_celk8")]
 position = Vector2(64, 96)
 
 [node name="Vampire2" parent="UnitLayer/Enemies" instance=ExtResource("6_celk8")]
-position = Vector2(208, 128)
+position = Vector2(240, 128)
 
 [node name="Big Batty" parent="UnitLayer/Enemies" instance=ExtResource("10_78jpb")]
 position = Vector2(112, 16)
@@ -220,9 +246,9 @@ position = Vector2(208, 16)
 layer = 0
 
 [node name="AbilityBar" parent="UILayer" instance=ExtResource("5_mlaal")]
-offset_left = 0.0
+offset_left = 4.0
 offset_top = 408.0
-offset_right = -44.0
+offset_right = -40.0
 offset_bottom = -48.0
 scale = Vector2(3, 3)
 
@@ -231,3 +257,5 @@ offset_left = 472.0
 offset_top = 8.0
 offset_right = 632.0
 offset_bottom = 128.0
+
+[connection signal="finished" from="AudioStreamPlayer" to="AudioStreamPlayer" method="_on_finished"]

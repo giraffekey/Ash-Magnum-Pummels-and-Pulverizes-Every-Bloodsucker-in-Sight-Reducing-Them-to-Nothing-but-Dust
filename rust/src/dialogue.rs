@@ -59,10 +59,11 @@ fn init_trigger_lists() -> HashMap<Room, Vec<(Vec<DialogueEvent>, String)>> {
         ),
         (
             Room::GreatHall,
-            vec![(
-                vec![DialogueEvent::LevelReady],
-                "great-hall-alukrod-intro".into(),
-            )],
+            // vec![(
+            //     vec![DialogueEvent::LevelReady],
+            //     "great-hall-alukrod-intro".into(),
+            // )],
+            vec![],
         ),
     ]
     .into()
