@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://db8hrhovuvjuy"]
+
+[ext_resource type="Texture2D" uid="uid://bxnp2whd7dslg" path="res://assets/sprites/projectiles.png" id="1_q3yiw"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ij46i"]
+atlas = ExtResource("1_q3yiw")
+
+[node name="Projectile" type="Projectile"]
+texture = SubResource("AtlasTexture_ij46i")

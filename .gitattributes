@@ -91,3 +91,4 @@ godot/assets/audio/hammer-of-witches-doom-metal-power-226459.mp3 filter=lfs diff
 godot/assets/audio/metal-dark-matter-111451.mp3 filter=lfs diff=lfs merge=lfs -text
 godot/assets/audio/metal-gear-136567.mp3 filter=lfs diff=lfs merge=lfs -text
 godot/assets/sprites/sword.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/projectiles.png filter=lfs diff=lfs merge=lfs -text

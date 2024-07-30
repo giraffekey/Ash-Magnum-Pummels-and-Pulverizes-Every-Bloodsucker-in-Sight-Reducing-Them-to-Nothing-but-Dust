@@ -384,7 +384,7 @@ impl Ally {
         self.next_position();
     }
 
-    pub fn use_ability(&mut self, position: Position) {
+    pub fn use_ability(&mut self, position: Position) -> Option<Gd<Projectile>> {
         let ability = *self.current_ability();
         let stats = abilities().get(&ability).unwrap();
         if stats.consumable {
@@ -559,6 +559,22 @@ impl Ally {
                 }
             },
             _ => unreachable!(),
+        }
+
+        match ability {
+            Ability::CrossbowIronBolt => {
+                let projectile = Projectile::new(ProjectileKind::IronBolt, self.position, position);
+                Some(projectile)
+            }
+            Ability::CrossbowSilverBolt => {
+                let projectile = Projectile::new(ProjectileKind::SilverBolt, self.position, position);
+                Some(projectile)
+            }
+            Ability::Hellfire => {
+                let projectile = Projectile::new(ProjectileKind::Fireball, self.position, position);
+                Some(projectile)
+            }
+            _ => None,
         }
     }
 
@@ -1258,6 +1274,74 @@ impl Item {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub enum ProjectileKind {
+    #[default]
+    IronBolt,
+    SilverBolt,
+    Fireball,
+}
+
+#[derive(GodotClass)]
+#[class(init, base=Sprite2D)]
+pub struct Projectile {
+    pub kind: ProjectileKind,
+    pub start: Position,
+    pub end: Position,
+    base: Base<Sprite2D>,
+}
+
+#[godot_api]
+impl ISprite2D for Projectile {
+    fn ready(&mut self) {
+        let mut atlas: Gd<AtlasTexture> = self.base().get_texture().unwrap().cast();
+        let x = match self.start.direction_to(self.end) {
+            Direction::Left => {
+                self.base_mut().set_flip_h(true);
+                32.0
+            }
+            Direction::Right => 32.0,
+            Direction::Up => 16.0,
+            Direction::Down => 0.0,
+        };
+        let y = match self.kind {
+            ProjectileKind::IronBolt => 0.0,
+            ProjectileKind::SilverBolt => 16.0,
+            ProjectileKind::Fireball => 32.0,
+        };
+        atlas.set_region(Rect2::new(Vector2::new(x, y), Vector2::new(16.0, 16.0)));
+
+        let start = self.start.to_vector() + Vector2::new(8.0, 8.0);
+        let end = self.end.to_vector() + Vector2::new(8.0, 8.0);
+        self.base_mut().set_position(start);
+
+        let mut tween = self.base_mut().create_tween().unwrap();
+        tween.tween_property(
+            self.base().clone().upcast(),
+            "position".into(),
+            Variant::from(end),
+            0.1 * self.start.distance(self.end) as f64,
+        );
+        tween.tween_callback(Callable::from_object_method(&self.base(), "queue_free"));
+    }
+}
+
+impl Projectile {
+    pub fn new(kind: ProjectileKind, start: Position, end: Position) -> Gd<Self> {
+        let scene = load::<PackedScene>("res://scenes/projectile.tscn");
+        let mut projectile: Gd<Self> = scene.instantiate().unwrap().cast();
+
+        {
+            let mut projectile = projectile.bind_mut();
+            projectile.kind = kind;
+            projectile.start = start;
+            projectile.end = end;
+        }
+
+        projectile
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum Tile {
     #[default]
@@ -1708,7 +1792,10 @@ impl Level {
                                 };
                                 match line_to(ally.position, position, self.grid) {
                                     Some(path) if path.len() as u16 <= stats.range => {
-                                        ally.use_ability(position);
+                                        if let Some(projectile) = ally.use_ability(position) {
+                                            self.base_mut().add_child(projectile.upcast());
+                                        }
+
                                         enemy.hit(damage, damage_kind);
                                         enemy.last_known_positions.insert(ally.id, ally.position);
 
