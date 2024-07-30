@@ -1,6 +1,7 @@
-[gd_scene load_steps=22 format=3 uid="uid://bwa24gghet860"]
+[gd_scene load_steps=31 format=3 uid="uid://bwa24gghet860"]
 
 [ext_resource type="Texture2D" uid="uid://bgenvlmdwn1at" path="res://assets/sprites/allies.png" id="1_qrawt"]
+[ext_resource type="Texture2D" uid="uid://dr22jlwg7vlj6" path="res://assets/sprites/whip.png" id="2_1xrjf"]
 
 [sub_resource type="Animation" id="Animation_oy33p"]
 length = 0.001
@@ -15,22 +16,6 @@ tracks/0/keys = {
 "transitions": PackedFloat32Array(1),
 "update": 1,
 "values": [0]
-}
-
-[sub_resource type="Animation" id="Animation_pnxde"]
-resource_name = "back_attack"
-length = 0.4
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
-"update": 1,
-"values": [28, 29, 30, 31]
 }
 
 [sub_resource type="Animation" id="Animation_midll"]
@@ -62,7 +47,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [62, 63]
+"values": [74, 75]
 }
 
 [sub_resource type="Animation" id="Animation_077vs"]
@@ -78,7 +63,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.1),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [50, 51]
+"values": [62, 63]
 }
 
 [sub_resource type="Animation" id="Animation_r85el"]
@@ -115,22 +100,6 @@ tracks/0/keys = {
 "values": [14, 15]
 }
 
-[sub_resource type="Animation" id="Animation_126lr"]
-resource_name = "front_attack"
-length = 0.4
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
-"update": 1,
-"values": [24, 25, 26, 27]
-}
-
 [sub_resource type="Animation" id="Animation_chaqp"]
 resource_name = "front_crossbow"
 length = 0.2
@@ -160,7 +129,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [60, 61]
+"values": [72, 73]
 }
 
 [sub_resource type="Animation" id="Animation_j8wbp"]
@@ -176,7 +145,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.1),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [48, 49]
+"values": [60, 61]
 }
 
 [sub_resource type="Animation" id="Animation_jo6op"]
@@ -213,22 +182,6 @@ tracks/0/keys = {
 "values": [12, 13]
 }
 
-[sub_resource type="Animation" id="Animation_qtyle"]
-resource_name = "side_attack"
-length = 0.4
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
-"transitions": PackedFloat32Array(1, 1, 1, 1),
-"update": 1,
-"values": [32, 33, 34, 35]
-}
-
 [sub_resource type="Animation" id="Animation_ubtvv"]
 resource_name = "side_crossbow"
 length = 0.2
@@ -258,7 +211,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.2),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [64, 65]
+"values": [76, 77]
 }
 
 [sub_resource type="Animation" id="Animation_6psbs"]
@@ -274,7 +227,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.1),
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
-"values": [52, 53]
+"values": [64, 65]
 }
 
 [sub_resource type="Animation" id="Animation_pqu8b"]
@@ -311,27 +264,197 @@ tracks/0/keys = {
 "values": [16, 17]
 }
 
+[sub_resource type="Animation" id="Animation_r74mn"]
+resource_name = "front_whip"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [24, 25, 26, 27]
+}
+
+[sub_resource type="Animation" id="Animation_i1wwb"]
+resource_name = "back_whip"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [28, 29, 30, 31]
+}
+
+[sub_resource type="Animation" id="Animation_nkhbf"]
+resource_name = "side_whip"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [32, 33, 34, 35]
+}
+
+[sub_resource type="Animation" id="Animation_ovukl"]
+resource_name = "back_stake"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [52, 53, 54, 55]
+}
+
+[sub_resource type="Animation" id="Animation_05kjp"]
+resource_name = "front_stake"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [48, 49, 50, 51]
+}
+
+[sub_resource type="Animation" id="Animation_8rprb"]
+resource_name = "side_stake"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [56, 57, 58, 59]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_p5j15"]
 _data = {
 "RESET": SubResource("Animation_oy33p"),
-"back_attack": SubResource("Animation_pnxde"),
 "back_crossbow": SubResource("Animation_midll"),
 "back_death": SubResource("Animation_ikikt"),
 "back_hit": SubResource("Animation_077vs"),
 "back_idle": SubResource("Animation_r85el"),
+"back_stake": SubResource("Animation_ovukl"),
 "back_walk": SubResource("Animation_wsipq"),
-"front_attack": SubResource("Animation_126lr"),
+"back_whip": SubResource("Animation_i1wwb"),
 "front_crossbow": SubResource("Animation_chaqp"),
 "front_death": SubResource("Animation_ad4g6"),
 "front_hit": SubResource("Animation_j8wbp"),
 "front_idle": SubResource("Animation_jo6op"),
+"front_stake": SubResource("Animation_05kjp"),
 "front_walk": SubResource("Animation_r4dkc"),
-"side_attack": SubResource("Animation_qtyle"),
+"front_whip": SubResource("Animation_r74mn"),
 "side_crossbow": SubResource("Animation_ubtvv"),
 "side_death": SubResource("Animation_wnt76"),
 "side_hit": SubResource("Animation_6psbs"),
 "side_idle": SubResource("Animation_pqu8b"),
-"side_walk": SubResource("Animation_hi0vn")
+"side_stake": SubResource("Animation_8rprb"),
+"side_walk": SubResource("Animation_hi0vn"),
+"side_whip": SubResource("Animation_nkhbf")
+}
+
+[sub_resource type="Animation" id="Animation_fpl0q"]
+resource_name = "front"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3]
+}
+
+[sub_resource type="Animation" id="Animation_lvhs0"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_cby5d"]
+resource_name = "back"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [4, 5, 6, 7]
+}
+
+[sub_resource type="Animation" id="Animation_1xi3v"]
+resource_name = "side"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [8, 9, 10, 11]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_7u6k4"]
+_data = {
+"RESET": SubResource("Animation_lvhs0"),
+"back": SubResource("Animation_cby5d"),
+"front": SubResource("Animation_fpl0q"),
+"side": SubResource("Animation_1xi3v")
 }
 
 [node name="AshMagnum" type="Ally"]
@@ -348,6 +471,20 @@ libraries = {
 position = Vector2(8, 4)
 texture = ExtResource("1_qrawt")
 hframes = 12
-vframes = 6
+vframes = 7
 region_enabled = true
-region_rect = Rect2(0, 0, 192, 96)
+region_rect = Rect2(0, 0, 192, 112)
+
+[node name="Whip" type="Node2D" parent="."]
+visible = false
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Whip"]
+libraries = {
+"": SubResource("AnimationLibrary_7u6k4")
+}
+
+[node name="Sprite" type="Sprite2D" parent="Whip"]
+position = Vector2(8, 4)
+texture = ExtResource("2_1xrjf")
+hframes = 4
+vframes = 3

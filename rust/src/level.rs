@@ -74,6 +74,8 @@ pub struct Ally {
     index: usize,
     #[init(default = "front_idle".into())]
     animation: String,
+    whip_animation: Option<String>,
+    sword_animation: Option<String>,
     base: Base<Node2D>,
 }
 
@@ -111,6 +113,26 @@ impl INode2D for Ally {
             .play_ex()
             .name(self.animation.clone().into())
             .done();
+
+        if let Some(whip_animation) = &self.whip_animation {
+            let mut animation_player = self
+                .base()
+                .get_node_as::<AnimationPlayer>("Whip/AnimationPlayer");
+            animation_player
+                .play_ex()
+                .name(whip_animation.into())
+                .done();
+        }
+
+        if let Some(sword_animation) = &self.sword_animation {
+            let mut animation_player = self
+                .base()
+                .get_node_as::<AnimationPlayer>("Sword/AnimationPlayer");
+            animation_player
+                .play_ex()
+                .name(sword_animation.into())
+                .done();
+        }
     }
 }
 
@@ -121,16 +143,58 @@ impl Ally {
         let name = name.to_string();
 
         match name.as_str() {
-            "side_attack" | "side_crossbow" | "side_hit" => self.animation = "side_idle".into(),
-            "back_attack" | "back_crossbow" | "back_hit" => self.animation = "back_idle".into(),
-            "front_attack" | "front_crossbow" | "front_hit" => self.animation = "front_idle".into(),
+            "side_whip" => {
+                self.animation = "side_idle".into();
+
+                let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                whip.set_visible(false);
+            }
+            "back_whip" => {
+                self.animation = "back_idle".into();
+
+                let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                whip.set_visible(false);
+            }
+            "front_whip" => {
+                self.animation = "front_idle".into();
+
+                let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                whip.set_visible(false);
+            }
+            "side_sword" => {
+                self.animation = "side_idle".into();
+
+                let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                sword.set_visible(false);
+            }
+            "back_sword" => {
+                self.animation = "back_idle".into();
+
+                let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                sword.set_visible(false);
+            }
+            "front_sword" => {
+                self.animation = "front_idle".into();
+
+                let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                sword.set_visible(false);
+            }
+            "side_crossbow" | "side_hellfire" | "side_bite" | "side_mist" | "side_stake"
+            | "side_hit" => self.animation = "side_idle".into(),
+            "back_crossbow" | "back_hellfire" | "back_bite" | "back_mist" | "back_stake"
+            | "back_hit" => self.animation = "back_idle".into(),
+            "front_crossbow" | "front_hellfire" | "front_bite" | "front_mist" | "front_stake"
+            | "front_hit" => self.animation = "front_idle".into(),
             "side_death" | "back_death" | "front_death" => self.base_mut().queue_free(),
             _ => (),
         }
 
         match name.as_str() {
-            "side_attack" | "side_crossbow" | "back_attack" | "back_crossbow" | "front_attack"
-            | "front_crossbow" => {
+            "side_whip" | "side_crossbow" | "side_sword" | "side_hellfire" | "side_bite"
+            | "side_mist" | "side_stake" | "back_whip" | "back_crossbow" | "back_sword"
+            | "back_hellfire" | "back_bite" | "back_mist" | "back_stake" | "front_whip"
+            | "front_crossbow" | "front_sword" | "front_hellfire" | "front_bite" | "front_mist"
+            | "front_stake" => {
                 self.has_acted = true;
 
                 let mut cursor = self
@@ -338,27 +402,42 @@ impl Ally {
         }
 
         match ability {
-            Ability::Whip
-            | Ability::Thwack
-            | Ability::Sword
-            | Ability::Hellfire
-            | Ability::VampireBite
-            | Ability::WoodenStake => match self.position.direction_to(position) {
+            Ability::Whip | Ability::Thwack => match self.position.direction_to(position) {
                 Direction::Left => {
-                    self.animation = "side_attack".into();
+                    self.animation = "side_whip".into();
                     self.flip_h(true);
+
+                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    self.whip_animation = Some("side".into());
+                    whip.set_visible(true);
+                    whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(true);
                 }
                 Direction::Right => {
-                    self.animation = "side_attack".into();
+                    self.animation = "side_whip".into();
                     self.flip_h(false);
+
+                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    self.whip_animation = Some("side".into());
+                    whip.set_visible(true);
+                    whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
                 Direction::Up => {
-                    self.animation = "back_attack".into();
+                    self.animation = "back_whip".into();
                     self.flip_h(false);
+
+                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    self.whip_animation = Some("back".into());
+                    whip.set_visible(true);
+                    whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
                 Direction::Down => {
-                    self.animation = "front_attack".into();
+                    self.animation = "front_whip".into();
                     self.flip_h(false);
+
+                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    self.whip_animation = Some("front".into());
+                    whip.set_visible(true);
+                    whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
             },
             Ability::CrossbowIronBolt | Ability::CrossbowSilverBolt => {
@@ -381,13 +460,104 @@ impl Ally {
                     }
                 }
             }
-            Ability::Mist => self.animation = "front_attack".into(),
-            // Ability::Mist => match self.animation.as_str() {
-            //     "side_idle" => self.animation = "side_mist".into(),
-            //     "back_idle" => self.animation = "back_mist".into(),
-            //     "front_idle" => self.animation = "front_mist".into(),
-            //     _ => unreachable!(),
-            // },
+            Ability::Sword => match self.position.direction_to(position) {
+                Direction::Left => {
+                    self.animation = "side_sword".into();
+                    self.flip_h(true);
+
+                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    self.sword_animation = Some("side".into());
+                    sword.set_visible(true);
+                    sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(true);
+                }
+                Direction::Right => {
+                    self.animation = "side_sword".into();
+                    self.flip_h(false);
+
+                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    self.sword_animation = Some("side".into());
+                    sword.set_visible(true);
+                    sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
+                }
+                Direction::Up => {
+                    self.animation = "back_sword".into();
+                    self.flip_h(false);
+
+                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    self.sword_animation = Some("back".into());
+                    sword.set_visible(true);
+                    sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
+                }
+                Direction::Down => {
+                    self.animation = "front_sword".into();
+                    self.flip_h(false);
+
+                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    self.sword_animation = Some("front".into());
+                    sword.set_visible(true);
+                    sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
+                }
+            },
+            Ability::Hellfire => match self.position.direction_to(position) {
+                Direction::Left => {
+                    self.animation = "side_hellfire".into();
+                    self.flip_h(true);
+                }
+                Direction::Right => {
+                    self.animation = "side_hellfire".into();
+                    self.flip_h(false);
+                }
+                Direction::Up => {
+                    self.animation = "back_hellfire".into();
+                    self.flip_h(false);
+                }
+                Direction::Down => {
+                    self.animation = "front_hellfire".into();
+                    self.flip_h(false);
+                }
+            },
+            Ability::VampireBite => match self.position.direction_to(position) {
+                Direction::Left => {
+                    self.animation = "side_bite".into();
+                    self.flip_h(true);
+                }
+                Direction::Right => {
+                    self.animation = "side_bite".into();
+                    self.flip_h(false);
+                }
+                Direction::Up => {
+                    self.animation = "back_bite".into();
+                    self.flip_h(false);
+                }
+                Direction::Down => {
+                    self.animation = "front_bite".into();
+                    self.flip_h(false);
+                }
+            },
+            Ability::Mist => match self.animation.as_str() {
+                "side_idle" => self.animation = "side_mist".into(),
+                "back_idle" => self.animation = "back_mist".into(),
+                "front_idle" => self.animation = "front_mist".into(),
+                _ => unreachable!(),
+            },
+            Ability::WoodenStake => match self.position.direction_to(position) {
+                Direction::Left => {
+                    self.animation = "side_stake".into();
+                    self.flip_h(true);
+                }
+                Direction::Right => {
+                    self.animation = "side_stake".into();
+                    self.flip_h(false);
+                }
+                Direction::Up => {
+                    self.animation = "back_stake".into();
+                    self.flip_h(false);
+                }
+                Direction::Down => {
+                    self.animation = "front_stake".into();
+                    self.flip_h(false);
+                }
+            },
             _ => unreachable!(),
         }
     }

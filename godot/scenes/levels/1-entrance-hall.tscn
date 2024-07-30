@@ -91,7 +91,6 @@ region = Rect2(0, 0, 16, 16)
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
 stream = SubResource("AudioStreamRandomizer_g27u3")
-autoplay = true
 script = ExtResource("2_rvfb6")
 
 [node name="MapLayer" type="CanvasLayer" parent="."]
@@ -149,10 +148,10 @@ position = Vector2(192, 288)
 [node name="IronBolt2" parent="ItemLayer" instance=ExtResource("4_t4bko")]
 position = Vector2(32, 160)
 
-[node name="SilverBolt1" parent="ItemLayer" instance=ExtResource("5_5aghk")]
+[node name="SilverBolt" parent="ItemLayer" instance=ExtResource("5_5aghk")]
 position = Vector2(64, 224)
 
-[node name="WoodenStake1" parent="ItemLayer" instance=ExtResource("6_b2m12")]
+[node name="WoodenStake" parent="ItemLayer" instance=ExtResource("6_b2m12")]
 position = Vector2(112, 320)
 
 [node name="UnitLayer" type="CanvasLayer" parent="."]

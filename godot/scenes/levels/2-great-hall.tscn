@@ -99,7 +99,6 @@ room = 2
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
 stream = SubResource("AudioStreamRandomizer_m6stt")
-autoplay = true
 script = ExtResource("5_xm6a7")
 
 [node name="MapLayer" type="CanvasLayer" parent="."]
