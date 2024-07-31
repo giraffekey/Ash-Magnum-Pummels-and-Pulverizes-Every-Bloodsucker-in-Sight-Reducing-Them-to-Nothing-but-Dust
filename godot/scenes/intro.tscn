@@ -1,0 +1,58 @@
+[gd_scene load_steps=6 format=3 uid="uid://mden2wmnjpdh"]
+
+[ext_resource type="Script" path="res://scripts/intro.gd" id="1_kdom0"]
+[ext_resource type="Texture2D" uid="uid://dr8wtnq2lpbcc" path="res://assets/sprites/spin.png" id="1_u2hf1"]
+
+[sub_resource type="Animation" id="Animation_lgtvc"]
+resource_name = "spin"
+length = 1.2
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.3, 0.6, 0.9),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3]
+}
+
+[sub_resource type="Animation" id="Animation_hgppq"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_t2hjp"]
+_data = {
+"RESET": SubResource("Animation_hgppq"),
+"spin": SubResource("Animation_lgtvc")
+}
+
+[node name="Intro" type="Node2D"]
+script = ExtResource("1_kdom0")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_t2hjp")
+}
+
+[node name="Sprite" type="Sprite2D" parent="."]
+visible = false
+position = Vector2(320, 180)
+scale = Vector2(4, 4)
+texture = ExtResource("1_u2hf1")
+hframes = 4
+region_rect = Rect2(0, 0, 96, 16)

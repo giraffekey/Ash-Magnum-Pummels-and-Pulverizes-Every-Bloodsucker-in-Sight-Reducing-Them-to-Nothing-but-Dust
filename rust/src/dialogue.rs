@@ -17,6 +17,7 @@ pub enum Room {
 pub enum DialogueEvent {
     LevelReady,
     EnemyMoved(EnemyKind),
+    AllyKilled(AllyId),
     EnemyKilled(EnemyKind),
 }
 
@@ -130,7 +131,7 @@ impl Dialogue {
             "great-hall-alukrod-intro" => {
                 let level = self.base().get_node_as::<Level>("..");
                 let level = level.bind();
-                let mut ally = level.get_ally(AllyId::Alukrod);
+                let ally = level.get_ally(AllyId::Alukrod);
                 ally.get_node_as::<Sprite2D>("Sprite").set_visible(true);
             }
             _ => (),

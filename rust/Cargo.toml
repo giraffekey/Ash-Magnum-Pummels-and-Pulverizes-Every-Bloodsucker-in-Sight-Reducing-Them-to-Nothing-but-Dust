@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-godot = { version = "0.1", features = ["experimental-godot-api"] }
+godot = { version = "0.1", features = ["experimental-godot-api", "experimental-wasm", "lazy-function-tables"] }
 itertools = "0.13"
 num-integer = "0.1"
 num-rational = "0.4"
@@ -19,6 +19,5 @@ codegen-units = 1
 opt-level = "z"
 lto = true
 debug = false
-panic = "abort"
+panic = "unwind"
 strip = true
-

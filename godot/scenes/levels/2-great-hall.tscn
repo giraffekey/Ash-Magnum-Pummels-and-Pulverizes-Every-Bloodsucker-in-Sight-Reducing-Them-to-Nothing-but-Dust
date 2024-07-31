@@ -121,6 +121,7 @@ layer_0/tile_data = PackedInt32Array(-131073, 0, 0, -65537, 0, 0, -196608, 0, 0,
 
 [node name="DoorLayer" type="CanvasLayer" parent="."]
 layer = -6
+follow_viewport_enabled = true
 
 [node name="Sprite" type="Sprite2D" parent="DoorLayer"]
 position = Vector2(132, -24)

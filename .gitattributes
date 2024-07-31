@@ -92,3 +92,8 @@ godot/assets/audio/metal-dark-matter-111451.mp3 filter=lfs diff=lfs merge=lfs -t
 godot/assets/audio/metal-gear-136567.mp3 filter=lfs diff=lfs merge=lfs -text
 godot/assets/sprites/sword.png filter=lfs diff=lfs merge=lfs -text
 godot/assets/sprites/projectiles.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/cover.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/spin.png filter=lfs diff=lfs merge=lfs -text
+godot/assets/sprites/splash.png filter=lfs diff=lfs merge=lfs -text
+godot/icon.png filter=lfs diff=lfs merge=lfs -text
+godot/bg.png filter=lfs diff=lfs merge=lfs -text

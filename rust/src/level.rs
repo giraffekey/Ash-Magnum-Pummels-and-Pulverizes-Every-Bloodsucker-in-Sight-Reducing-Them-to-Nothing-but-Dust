@@ -1,4 +1,5 @@
 use crate::ability::{abilities, ability_lists, Ability, Action, DamageKind};
+use crate::death_screen::DeathScreen;
 use crate::dialogue::{Dialogue, DialogueEvent, Room};
 use crate::math::{attack_positions, compute_fov, line_to, pathfind, Direction, Position};
 use crate::traits::{trait_lists, Trait};
@@ -185,7 +186,46 @@ impl Ally {
             | "back_hit" => self.animation = "back_idle".into(),
             "front_crossbow" | "front_hellfire" | "front_bite" | "front_mist" | "front_stake"
             | "front_hit" => self.animation = "front_idle".into(),
-            "side_death" | "back_death" | "front_death" => self.base_mut().queue_free(),
+            "side_death" | "back_death" | "front_death" => {
+                let mut level_node = self.base().get_node_as::<Level>("../../..");
+                let mut level = level_node.bind_mut();
+
+                match self.id {
+                    AllyId::AshMagnum => {
+                        let scene = load::<PackedScene>("res://scenes/death.tscn");
+                        let mut scene: Gd<DeathScreen> = scene.instantiate().unwrap().cast();
+
+                        {
+                            let mut scene = scene.bind_mut();
+                            scene.room = level.room;
+                        }
+
+                        self.base()
+                            .get_tree()
+                            .unwrap()
+                            .get_root()
+                            .unwrap()
+                            .add_child(scene.clone().upcast());
+                        self.base()
+                            .get_tree()
+                            .unwrap()
+                            .set_current_scene(scene.upcast());
+
+                        drop(level);
+                        level_node.queue_free();
+                    }
+                    _ => {
+                        level.grid[self.position.x][self.position.y] = Tile::Empty;
+                        level.allies.remove(&self.id);
+
+                        let mut dialogue = self.base().get_node_as::<Dialogue>("../../../Dialogue");
+                        let mut dialogue = dialogue.bind_mut();
+                        dialogue.push_event(DialogueEvent::AllyKilled(self.id));
+
+                        self.base_mut().queue_free();
+                    }
+                }
+            }
             _ => (),
         }
 
@@ -268,8 +308,15 @@ impl Ally {
                 if DOOR_TILES.contains(&self.position) {
                     let scene = match level.room {
                         Room::EntranceHall => "res://scenes/levels/2-great-hall.tscn",
-                        Room::GreatHall => todo!(),
+                        Room::GreatHall => {
+                            self.base()
+                                .get_tree()
+                                .unwrap()
+                                .change_scene_to_file("res://scenes/end.tscn".into());
+                            return;
+                        }
                     };
+
                     let scene = load::<PackedScene>(scene);
                     let mut next_level: Gd<Level> = scene.instantiate().unwrap().cast();
 

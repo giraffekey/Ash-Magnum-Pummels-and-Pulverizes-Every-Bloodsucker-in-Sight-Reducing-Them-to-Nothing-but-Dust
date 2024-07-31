@@ -11,9 +11,11 @@ config_version=5
 [application]
 
 config/name="Ash Magnum, the Vampire Slayer, Pummels and Pulverizes Every Bloodsucker in Sight, Reducing Them to Nothing but Dust"
-run/main_scene="res://scenes/levels/1-entrance-hall.tscn"
+run/main_scene="res://scenes/intro.tscn"
 config/features=PackedStringArray("4.2", "Forward Plus")
-config/icon="res://icon.svg"
+boot_splash/image="res://assets/sprites/splash.png"
+boot_splash/use_filter=false
+config/icon="res://icon.png"
 
 [autoload]
 
@@ -34,10 +36,11 @@ directories/dtl_directory={
 "entrance-hall-defeat-bat": "res://dialogue/timelines/entrance-hall-defeat-bat.dtl",
 "entrance-hall-movement-manual": "res://dialogue/timelines/entrance-hall-movement-manual.dtl",
 "entrance-hall-vampire-appears": "res://dialogue/timelines/entrance-hall-vampire-appears.dtl",
-"great-hall-alukrod-intro": "res://dialogue/timelines/great-hall-alukrod-intro.dtl"
+"great-hall-alukrod-intro": "res://dialogue/timelines/great-hall-alukrod-intro.dtl",
+"intro": "res://dialogue/timelines/intro.dtl"
 }
 variables={}
-layout/style_list=["res://dialogue/styles/basic.tres"]
+layout/style_list=["res://dialogue/styles/basic.tres", "res://dialogue/styles/no_portrait.tres"]
 layout/default_style="res://dialogue/styles/basic.tres"
 glossary/default_case_sensitive=true
 text/letter_speed=0.01
@@ -124,3 +127,4 @@ dialogic_default_action={
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)
