@@ -187,9 +187,8 @@ pub fn pathfind(
                     }
 
                     if grid[adjacent.x + i][adjacent.y + j] != start_tile {
-                        match grid[adjacent.x + i][adjacent.y + j] {
-                            Tile::Empty | Tile::Item(_) => (),
-                            Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => continue 'a,
+                        if !grid[adjacent.x + i][adjacent.y + j].is_empty() {
+                            continue 'a;
                         }
                     }
                 }
@@ -246,9 +245,10 @@ pub fn line_to(
                 return Some(path);
             }
 
-            match grid[position.x][position.y] {
-                Tile::Empty | Tile::Item(_) => path.push(position),
-                Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
+            if grid[position.x][position.y].is_empty() {
+                path.push(position);
+            } else {
+                break;
             }
         }
     }
@@ -279,9 +279,10 @@ pub fn attack_positions(
                         None => break,
                     };
 
-                    match grid[position.x][position.y] {
-                        Tile::Empty | Tile::Item(_) => positions.push((position, dist)),
-                        Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
+                    if grid[position.x][position.y].is_empty() {
+                        positions.push((position, dist));
+                    } else {
+                        break;
                     }
                 }
             }

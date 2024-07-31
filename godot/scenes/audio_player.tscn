@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://cumsv5tsithh"]
+
+[ext_resource type="AudioStream" uid="uid://dtimivcbq0j2s" path="res://assets/audio/return-of-the-demon-slayer-8686.mp3" id="1_rrx7h"]
+[ext_resource type="Script" path="res://scripts/audio.gd" id="2_8rhg3"]
+
+[node name="AudioPlayer" type="AudioStreamPlayer"]
+stream = ExtResource("1_rrx7h")
+autoplay = true
+script = ExtResource("2_8rhg3")
+
+[connection signal="finished" from="." to="." method="_on_finished"]

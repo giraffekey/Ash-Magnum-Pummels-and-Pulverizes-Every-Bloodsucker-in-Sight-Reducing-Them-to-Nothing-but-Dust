@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dfx1qqugbk4rc" path="res://assets/sprites/items.png" id="1_ioq8x"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_33uxq"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_bmvmd"]
 atlas = ExtResource("1_ioq8x")
 region = Rect2(64, 0, 16, 16)
 
@@ -11,4 +11,4 @@ kind = 5
 
 [node name="Sprite" type="Sprite2D" parent="."]
 position = Vector2(8, 8)
-texture = SubResource("AtlasTexture_33uxq")
+texture = SubResource("AtlasTexture_bmvmd")

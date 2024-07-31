@@ -144,48 +144,12 @@ impl Ally {
         let name = name.to_string();
 
         match name.as_str() {
-            "side_whip" => {
-                self.animation = "side_idle".into();
-
-                let mut whip = self.base().get_node_as::<Node2D>("Whip");
-                whip.set_visible(false);
-            }
-            "back_whip" => {
-                self.animation = "back_idle".into();
-
-                let mut whip = self.base().get_node_as::<Node2D>("Whip");
-                whip.set_visible(false);
-            }
-            "front_whip" => {
-                self.animation = "front_idle".into();
-
-                let mut whip = self.base().get_node_as::<Node2D>("Whip");
-                whip.set_visible(false);
-            }
-            "side_sword" => {
-                self.animation = "side_idle".into();
-
-                let mut sword = self.base().get_node_as::<Node2D>("Sword");
-                sword.set_visible(false);
-            }
-            "back_sword" => {
-                self.animation = "back_idle".into();
-
-                let mut sword = self.base().get_node_as::<Node2D>("Sword");
-                sword.set_visible(false);
-            }
-            "front_sword" => {
-                self.animation = "front_idle".into();
-
-                let mut sword = self.base().get_node_as::<Node2D>("Sword");
-                sword.set_visible(false);
-            }
-            "side_crossbow" | "side_hellfire" | "side_bite" | "side_mist" | "side_stake"
-            | "side_hit" => self.animation = "side_idle".into(),
-            "back_crossbow" | "back_hellfire" | "back_bite" | "back_mist" | "back_stake"
-            | "back_hit" => self.animation = "back_idle".into(),
-            "front_crossbow" | "front_hellfire" | "front_bite" | "front_mist" | "front_stake"
-            | "front_hit" => self.animation = "front_idle".into(),
+            "side_whip" | "side_crossbow" | "side_sword" | "side_hellfire" | "side_bite"
+            | "side_mist" | "side_stake" | "side_hit" => self.animation = "side_idle".into(),
+            "back_whip" | "back_crossbow" | "back_sword" | "back_hellfire" | "back_bite"
+            | "back_mist" | "back_stake" | "back_hit" => self.animation = "back_idle".into(),
+            "front_whip" | "front_crossbow" | "front_sword" | "front_hellfire" | "front_bite"
+            | "front_mist" | "front_stake" | "front_hit" => self.animation = "front_idle".into(),
             "side_death" | "back_death" | "front_death" => {
                 let mut level_node = self.base().get_node_as::<Level>("../../..");
                 let mut level = level_node.bind_mut();
@@ -236,6 +200,8 @@ impl Ally {
             | "front_crossbow" | "front_sword" | "front_hellfire" | "front_bite" | "front_mist"
             | "front_stake" => {
                 self.has_acted = true;
+                self.whip_animation = None;
+                self.sword_animation = None;
 
                 let mut cursor = self
                     .base()
@@ -359,8 +325,8 @@ impl Ally {
                         _ => unreachable!(),
                     }
 
-                    match level.at(self.position) {
-                        Tile::Item(id) => {
+                    match level.item_at(self.position) {
+                        Some(id) => {
                             let mut item = level.get_item(id);
 
                             let picked_up = {
@@ -387,7 +353,7 @@ impl Ally {
                                 item.queue_free();
                             }
                         }
-                        _ => (),
+                        None => (),
                     }
 
                     level.grid[self.position.x][self.position.y] = Tile::Ally(self.id);
@@ -454,36 +420,48 @@ impl Ally {
                     self.animation = "side_whip".into();
                     self.flip_h(true);
 
-                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    let whip = self.base().get_node_as::<Node2D>("Whip");
                     self.whip_animation = Some("side".into());
-                    whip.set_visible(true);
+                    whip.get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("side".into())
+                        .done();
                     whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(true);
                 }
                 Direction::Right => {
                     self.animation = "side_whip".into();
                     self.flip_h(false);
 
-                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    let whip = self.base().get_node_as::<Node2D>("Whip");
                     self.whip_animation = Some("side".into());
-                    whip.set_visible(true);
+                    whip.get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("side".into())
+                        .done();
                     whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
                 Direction::Up => {
                     self.animation = "back_whip".into();
                     self.flip_h(false);
 
-                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    let whip = self.base().get_node_as::<Node2D>("Whip");
                     self.whip_animation = Some("back".into());
-                    whip.set_visible(true);
+                    whip.get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("back".into())
+                        .done();
                     whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
                 Direction::Down => {
                     self.animation = "front_whip".into();
                     self.flip_h(false);
 
-                    let mut whip = self.base().get_node_as::<Node2D>("Whip");
+                    let whip = self.base().get_node_as::<Node2D>("Whip");
                     self.whip_animation = Some("front".into());
-                    whip.set_visible(true);
+                    whip.get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("front".into())
+                        .done();
                     whip.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
             },
@@ -512,36 +490,52 @@ impl Ally {
                     self.animation = "side_sword".into();
                     self.flip_h(true);
 
-                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    let sword = self.base().get_node_as::<Node2D>("Sword");
                     self.sword_animation = Some("side".into());
-                    sword.set_visible(true);
+                    sword
+                        .get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("side".into())
+                        .done();
                     sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(true);
                 }
                 Direction::Right => {
                     self.animation = "side_sword".into();
                     self.flip_h(false);
 
-                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    let sword = self.base().get_node_as::<Node2D>("Sword");
                     self.sword_animation = Some("side".into());
-                    sword.set_visible(true);
+                    sword
+                        .get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("side".into())
+                        .done();
                     sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
                 Direction::Up => {
                     self.animation = "back_sword".into();
                     self.flip_h(false);
 
-                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    let sword = self.base().get_node_as::<Node2D>("Sword");
                     self.sword_animation = Some("back".into());
-                    sword.set_visible(true);
+                    sword
+                        .get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("back".into())
+                        .done();
                     sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
                 Direction::Down => {
                     self.animation = "front_sword".into();
                     self.flip_h(false);
 
-                    let mut sword = self.base().get_node_as::<Node2D>("Sword");
+                    let sword = self.base().get_node_as::<Node2D>("Sword");
                     self.sword_animation = Some("front".into());
-                    sword.set_visible(true);
+                    sword
+                        .get_node_as::<AnimationPlayer>("AnimationPlayer")
+                        .play_ex()
+                        .name("front".into())
+                        .done();
                     sword.get_node_as::<Sprite2D>("Sprite").set_flip_h(false);
                 }
             },
@@ -1052,8 +1046,8 @@ impl Enemy {
                                     y: self.position.y + j,
                                 };
                                 for adjacent in position.adjacent() {
-                                    match level.grid[adjacent.x][adjacent.y] {
-                                        Tile::Empty | Tile::Item(_) => actions.push((
+                                    if level.grid[adjacent.x][adjacent.y].is_empty() {
+                                        actions.push((
                                             Some(*ability),
                                             EnemyAction::Spawn {
                                                 enemy_kind,
@@ -1061,8 +1055,7 @@ impl Enemy {
                                             },
                                             stats.range,
                                             vec![self.position],
-                                        )),
-                                        Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => (),
+                                        ));
                                     }
                                 }
                             }
@@ -1234,9 +1227,10 @@ impl Enemy {
                 None => break,
             };
 
-            match level.grid[pos.x][pos.y] {
-                Tile::Empty | Tile::Item(_) => position = pos,
-                Tile::Ally(_) | Tile::Enemy(_) | Tile::Obstacle(_) => break,
+            if level.grid[pos.x][pos.y].is_empty() {
+                position = pos;
+            } else {
+                break;
             }
         }
 
@@ -1310,6 +1304,18 @@ pub enum ItemKind {
     HolyWater,
 }
 
+impl ItemKind {
+    pub fn name(&self) -> String {
+        match self {
+            Self::IronBolt => "Iron Bolt".into(),
+            Self::SilverBolt => "Silver Bolt".into(),
+            Self::WoodenStake => "Wooden Stake".into(),
+            Self::Garlic => "Garlic".into(),
+            Self::HolyWater => "Holy Water".into(),
+        }
+    }
+}
+
 #[derive(GodotClass)]
 #[class(init, base=Node2D)]
 pub struct Item {
@@ -1322,13 +1328,7 @@ pub struct Item {
 
 impl Item {
     pub fn name(&self) -> String {
-        match self.kind {
-            ItemKind::IronBolt => "Iron Bolt".into(),
-            ItemKind::SilverBolt => "Silver Bolt".into(),
-            ItemKind::WoodenStake => "Wooden Stake".into(),
-            ItemKind::Garlic => "Garlic".into(),
-            ItemKind::HolyWater => "Holy Water".into(),
-        }
+        self.kind.name()
     }
 
     pub fn ability(&self) -> Ability {
@@ -1417,7 +1417,15 @@ pub enum Tile {
     Ally(AllyId),
     Enemy(EnemyId),
     Obstacle(ObstacleId),
-    Item(ItemId),
+}
+
+impl Tile {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Self::Empty => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -1433,6 +1441,7 @@ pub struct Level {
     #[export]
     pub room: Room,
     pub grid: [[Tile; LEVEL_HEIGHT]; LEVEL_WIDTH],
+    pub item_grid: [[Option<ItemId>; LEVEL_HEIGHT]; LEVEL_WIDTH],
     pub turn: Turn,
     pub turn_order: Vec<(EnemyId, u16)>,
     pub spawn_queue: Vec<EnemyId>,
@@ -1558,7 +1567,7 @@ impl INode2D for Level {
 
             let mut item = item.bind_mut();
             item.position = position;
-            self.grid[position.x][position.y] = Tile::Item(self.item_id);
+            self.item_grid[position.x][position.y] = Some(self.item_id);
 
             item.id = self.item_id;
             self.item_id += 1;
@@ -1752,6 +1761,10 @@ impl Level {
         self.grid[position.x][position.y]
     }
 
+    pub fn item_at(&self, position: Position) -> Option<ItemId> {
+        self.item_grid[position.x][position.y]
+    }
+
     pub fn get_ally(&self, ally_id: AllyId) -> Gd<Ally> {
         let instance_id = *self.allies.get(&ally_id).unwrap();
         instance_from_id(instance_id).unwrap().cast()
@@ -1922,13 +1935,18 @@ impl Level {
                     ally.effects.insert(effect, stats);
                     return true;
                 }
-                Action::PlaceItem { kind } => match line_to(ally.position, position, self.grid) {
-                    Some(path) if path.len() as u16 <= stats.range => {
-                        self.spawn_item(kind, position);
-                        return true;
+                Action::PlaceItem { kind } => {
+                    if self.grid[position.x][position.y] == Tile::Empty {
+                        match line_to(ally.position, position, self.grid) {
+                            Some(path) if path.len() as u16 <= stats.range => {
+                                ally.use_ability(position);
+                                self.spawn_item(kind, position);
+                                return true;
+                            }
+                            _ => (),
+                        }
                     }
-                    _ => (),
-                },
+                }
                 _ => unreachable!(),
             }
         }
@@ -1983,8 +2001,8 @@ impl Level {
             item.position = position;
         }
 
-        self.grid[position.x][position.y] = Tile::Item(self.item_id);
-        self.items.insert(self.enemy_id, instance_id);
+        self.item_grid[position.x][position.y] = Some(self.item_id);
+        self.items.insert(self.item_id, instance_id);
         self.item_id += 1;
 
         let mut layer = self.base().get_node_as::<CanvasLayer>("ItemLayer");
@@ -2118,7 +2136,7 @@ impl ISprite2D for Cursor {
 
             if input.is_action_just_pressed("select".into()) {
                 match level.at(self.position) {
-                    Tile::Empty | Tile::Item(_) => {
+                    Tile::Empty => {
                         if let Some(selected) = self.selected {
                             if self.acting {
                                 if level.use_ability(selected, self.position, None) {
@@ -2185,7 +2203,7 @@ impl ISprite2D for Cursor {
                 }
             } else {
                 match level.at(self.position) {
-                    Tile::Empty | Tile::Item(_) => {
+                    Tile::Empty => {
                         if let Some(selected) = self.selected {
                             let ally = level.get_ally(selected);
                             let ally = ally.bind();
@@ -2258,10 +2276,12 @@ impl ISprite2D for Cursor {
                     let mut info_panel = info_panel.bind_mut();
 
                     match level.at(self.position) {
-                        Tile::Empty | Tile::Obstacle(_) => info_panel.deselect_tile(),
+                        Tile::Empty | Tile::Obstacle(_) => match level.item_at(self.position) {
+                            Some(item_id) => info_panel.select_item(item_id, &level),
+                            None => info_panel.deselect_tile(),
+                        },
                         Tile::Ally(ally_id) => info_panel.select_ally(ally_id, &level),
                         Tile::Enemy(enemy_id) => info_panel.select_enemy(enemy_id, &level),
-                        Tile::Item(item_id) => info_panel.select_item(item_id, &level),
                     }
                 }
 

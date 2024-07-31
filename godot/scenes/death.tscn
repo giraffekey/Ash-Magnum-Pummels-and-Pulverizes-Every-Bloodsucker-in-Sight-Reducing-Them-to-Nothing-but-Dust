@@ -13,7 +13,7 @@ alignment = 1
 layout_mode = 2
 text = "Well, shit, man
 You died
-That really sucks"
+That kind of sucks"
 horizontal_alignment = 1
 
 [node name="Button" type="Button" parent="VBoxContainer"]

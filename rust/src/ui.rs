@@ -193,6 +193,7 @@ fn action_description(action: Action) -> String {
             Effect::Mist => "Transform into mist".into(),
             _ => unreachable!(),
         },
+        Action::PlaceItem { kind } => format!("Places {}", kind.name()),
         _ => unreachable!(),
     }
 }

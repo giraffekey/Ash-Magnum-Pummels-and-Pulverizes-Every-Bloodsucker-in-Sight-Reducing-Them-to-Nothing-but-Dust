@@ -1,7 +1,8 @@
-[gd_scene load_steps=34 format=3 uid="uid://dvrbwf32r043p"]
+[gd_scene load_steps=38 format=3 uid="uid://dvrbwf32r043p"]
 
 [ext_resource type="Texture2D" uid="uid://bgenvlmdwn1at" path="res://assets/sprites/allies.png" id="1_ixjbi"]
 [ext_resource type="Texture2D" uid="uid://cf4jy5e3kcd8f" path="res://assets/sprites/sword.png" id="2_6yocu"]
+[ext_resource type="Script" path="res://scripts/weapon.gd" id="2_hsfy2"]
 
 [sub_resource type="Animation" id="Animation_0e7ds"]
 length = 0.001
@@ -408,6 +409,54 @@ tracks/0/keys = {
 "values": [16, 17]
 }
 
+[sub_resource type="Animation" id="Animation_brxa8"]
+resource_name = "front_stake"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [24, 25, 26, 27]
+}
+
+[sub_resource type="Animation" id="Animation_if3ns"]
+resource_name = "back_stake"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [28, 29, 30, 31]
+}
+
+[sub_resource type="Animation" id="Animation_a2551"]
+resource_name = "side_stake"
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [32, 33, 34, 35]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_okk1u"]
 _data = {
 "RESET": SubResource("Animation_0e7ds"),
@@ -417,6 +466,7 @@ _data = {
 "back_hit": SubResource("Animation_vpqcb"),
 "back_idle": SubResource("Animation_1lfip"),
 "back_mist": SubResource("Animation_obcly"),
+"back_stake": SubResource("Animation_if3ns"),
 "back_sword": SubResource("Animation_oli71"),
 "back_walk": SubResource("Animation_q41hp"),
 "front_bite": SubResource("Animation_khy5y"),
@@ -425,6 +475,7 @@ _data = {
 "front_hit": SubResource("Animation_dkwiy"),
 "front_idle": SubResource("Animation_hdrkj"),
 "front_mist": SubResource("Animation_loqm0"),
+"front_stake": SubResource("Animation_brxa8"),
 "front_sword": SubResource("Animation_5bt8x"),
 "front_walk": SubResource("Animation_ygvqm"),
 "side_bite": SubResource("Animation_3vfqr"),
@@ -433,6 +484,7 @@ _data = {
 "side_hit": SubResource("Animation_0hanh"),
 "side_idle": SubResource("Animation_p6td5"),
 "side_mist": SubResource("Animation_y0b0i"),
+"side_stake": SubResource("Animation_a2551"),
 "side_sword": SubResource("Animation_77v54"),
 "side_walk": SubResource("Animation_44mkd")
 }
@@ -531,6 +583,7 @@ region_rect = Rect2(0, 112, 192, 128)
 
 [node name="Sword" type="Node2D" parent="."]
 visible = false
+script = ExtResource("2_hsfy2")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Sword"]
 libraries = {
@@ -542,3 +595,6 @@ position = Vector2(8, 4)
 texture = ExtResource("2_6yocu")
 hframes = 4
 vframes = 3
+
+[connection signal="animation_finished" from="Sword/AnimationPlayer" to="Sword" method="_on_animation_finished"]
+[connection signal="animation_started" from="Sword/AnimationPlayer" to="Sword" method="_on_animation_started"]

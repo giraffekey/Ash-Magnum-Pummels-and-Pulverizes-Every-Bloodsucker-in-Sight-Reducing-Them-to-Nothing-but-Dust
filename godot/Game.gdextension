@@ -6,8 +6,8 @@ reloadable = true
 [libraries]
 linux.debug.x86_64 =     "res://../rust/target/debug/libextension.so"
 linux.release.x86_64 =   "res://../rust/target/release/libextension.so"
-windows.debug.x86_64 =   "res://../rust/target/debug/extension.dll"
-windows.release.x86_64 = "res://../rust/target/release/extension.dll"
+windows.debug.x86_64 =   "res://../rust/target/x86_64-pc-windows-msvc/debug/extension.dll"
+windows.release.x86_64 = "res://../rust/target/x86_64-pc-windows-msvc/release/extension.dll"
 macos.debug =            "res://../rust/target/debug/libextension.dylib"
 macos.release =          "res://../rust/target/release/libextension.dylib"
 macos.debug.arm64 =      "res://../rust/target/debug/libextension.dylib"

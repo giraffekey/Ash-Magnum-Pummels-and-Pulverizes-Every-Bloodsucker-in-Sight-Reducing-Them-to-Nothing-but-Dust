@@ -1,7 +1,8 @@
-[gd_scene load_steps=31 format=3 uid="uid://bwa24gghet860"]
+[gd_scene load_steps=32 format=3 uid="uid://bwa24gghet860"]
 
 [ext_resource type="Texture2D" uid="uid://bgenvlmdwn1at" path="res://assets/sprites/allies.png" id="1_qrawt"]
 [ext_resource type="Texture2D" uid="uid://dr22jlwg7vlj6" path="res://assets/sprites/whip.png" id="2_1xrjf"]
+[ext_resource type="Script" path="res://scripts/weapon.gd" id="2_ppqay"]
 
 [sub_resource type="Animation" id="Animation_oy33p"]
 length = 0.001
@@ -477,6 +478,7 @@ region_rect = Rect2(0, 0, 192, 112)
 
 [node name="Whip" type="Node2D" parent="."]
 visible = false
+script = ExtResource("2_ppqay")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Whip"]
 libraries = {
@@ -488,3 +490,6 @@ position = Vector2(8, 4)
 texture = ExtResource("2_1xrjf")
 hframes = 4
 vframes = 3
+
+[connection signal="animation_finished" from="Whip/AnimationPlayer" to="Whip" method="_on_animation_finished"]
+[connection signal="animation_started" from="Whip/AnimationPlayer" to="Whip" method="_on_animation_started"]

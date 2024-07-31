@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://d1o6clxpxrgac"]
+[gd_scene load_steps=11 format=3 uid="uid://d1o6clxpxrgac"]
 
 [ext_resource type="Texture2D" uid="uid://ba7xgndjq62px" path="res://assets/sprites/abilities.png" id="1_pcuxt"]
 [ext_resource type="FontFile" uid="uid://cxgjerdpqlq8a" path="res://assets/fonts/Covenant5x5.ttf" id="2_micq6"]
@@ -15,10 +15,16 @@ atlas = ExtResource("1_pcuxt")
 [sub_resource type="AtlasTexture" id="AtlasTexture_3nrpt"]
 atlas = ExtResource("1_pcuxt")
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_b6mi6"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_am7pn"]
 atlas = ExtResource("1_pcuxt")
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_i88h6"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_rxmi8"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lgq1u"]
+atlas = ExtResource("1_pcuxt")
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b8ygt"]
 atlas = ExtResource("1_pcuxt")
 
 [node name="Abilities" type="AbilityBar"]
@@ -95,7 +101,7 @@ horizontal_alignment = 1
 [node name="AbilityIcon4" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
-texture = SubResource("AtlasTexture_b6mi6")
+texture = SubResource("AtlasTexture_am7pn")
 
 [node name="Amount" type="Label" parent="AbilityIcon4"]
 layout_mode = 0
@@ -110,7 +116,7 @@ horizontal_alignment = 1
 [node name="AbilityIcon5" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
-texture = SubResource("AtlasTexture_i88h6")
+texture = SubResource("AtlasTexture_rxmi8")
 
 [node name="Amount" type="Label" parent="AbilityIcon5"]
 layout_mode = 0
@@ -125,7 +131,7 @@ horizontal_alignment = 1
 [node name="AbilityIcon6" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
-texture = SubResource("AtlasTexture_i88h6")
+texture = SubResource("AtlasTexture_lgq1u")
 
 [node name="Amount" type="Label" parent="AbilityIcon6"]
 layout_mode = 0
@@ -140,7 +146,7 @@ horizontal_alignment = 1
 [node name="AbilityIcon7" type="AbilityIcon" parent="."]
 visible = false
 layout_mode = 2
-texture = SubResource("AtlasTexture_i88h6")
+texture = SubResource("AtlasTexture_b8ygt")
 
 [node name="Amount" type="Label" parent="AbilityIcon7"]
 layout_mode = 0
