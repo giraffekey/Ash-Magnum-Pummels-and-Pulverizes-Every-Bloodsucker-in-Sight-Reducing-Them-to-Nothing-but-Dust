@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://38sanxr0qrsd"]
+
+[ext_resource type="Texture2D" uid="uid://dfx1qqugbk4rc" path="res://assets/sprites/items.png" id="1_xnsa7"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_37yse"]
+atlas = ExtResource("1_xnsa7")
+region = Rect2(48, 0, 16, 16)
+
+[node name="Garlic" type="Item"]
+kind = 4
+
+[node name="Sprite" type="Sprite2D" parent="."]
+position = Vector2(8, 8)
+texture = SubResource("AtlasTexture_37yse")

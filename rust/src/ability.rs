@@ -1,4 +1,4 @@
-use crate::level::{Effect, EffectStats, EnemyKind};
+use crate::level::{Effect, EffectStats, EnemyKind, ItemKind};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -14,6 +14,8 @@ pub enum Ability {
     VampireBite,
     Mist,
     WoodenStake,
+    Garlic,
+    HolyWater,
     BatBite,
     VampireScratch,
     BigBatBite,
@@ -36,6 +38,7 @@ pub enum Action {
     Attack {
         damage_kind: DamageKind,
         damage: u16,
+        aoe: bool,
     },
     Push {
         damage_kind: DamageKind,
@@ -45,6 +48,9 @@ pub enum Action {
     Effect {
         effect: Effect,
         stats: EffectStats,
+    },
+    PlaceItem {
+        kind: ItemKind,
     },
     Spawn {
         enemy_kind: EnemyKind,
@@ -101,6 +107,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Silver,
                     damage: 2,
+                    aoe: false,
                 },
                 range: 2,
                 acquirable: false,
@@ -115,6 +122,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Normal,
                     damage: 2,
+                    aoe: false,
                 },
                 range: 6,
                 acquirable: false,
@@ -129,6 +137,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Silver,
                     damage: 2,
+                    aoe: false,
                 },
                 range: 6,
                 acquirable: false,
@@ -158,6 +167,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Normal,
                     damage: 2,
+                    aoe: false,
                 },
                 range: 1,
                 acquirable: false,
@@ -172,6 +182,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Fire,
                     damage: 2,
+                    aoe: false,
                 },
                 range: 6,
                 acquirable: false,
@@ -186,6 +197,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::LifeSteal,
                     damage: 1,
+                    aoe: false,
                 },
                 range: 1,
                 acquirable: false,
@@ -217,8 +229,37 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Stake,
                     damage: 1,
+                    aoe: false,
                 },
                 range: 1,
+                acquirable: true,
+                consumable: true,
+                persistent: true,
+            },
+        ),
+        (
+            Ability::Garlic,
+            AbilityStats {
+                name: "Garlic".into(),
+                action: Action::PlaceItem {
+                    kind: ItemKind::Garlic,
+                },
+                range: 4,
+                acquirable: true,
+                consumable: true,
+                persistent: true,
+            },
+        ),
+        (
+            Ability::HolyWater,
+            AbilityStats {
+                name: "Holy Water".into(),
+                action: Action::Attack {
+                    damage_kind: DamageKind::Holy,
+                    damage: 2,
+                    aoe: true,
+                },
+                range: 4,
                 acquirable: true,
                 consumable: true,
                 persistent: true,
@@ -231,6 +272,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Normal,
                     damage: 1,
+                    aoe: false,
                 },
                 range: 1,
                 acquirable: false,
@@ -245,6 +287,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Normal,
                     damage: 2,
+                    aoe: false,
                 },
                 range: 1,
                 acquirable: false,
@@ -259,6 +302,7 @@ fn init_abilities() -> HashMap<Ability, AbilityStats> {
                 action: Action::Attack {
                     damage_kind: DamageKind::Normal,
                     damage: 2,
+                    aoe: false,
                 },
                 range: 1,
                 acquirable: false,

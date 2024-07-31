@@ -7,6 +7,7 @@ pub enum Trait {
     StakeVulnerable,
     SunlightVulnerable,
     HolyFromSunlight,
+    GarlicAllergy,
 }
 
 pub fn trait_lists() -> &'static Vec<Vec<Trait>> {
@@ -21,12 +22,14 @@ fn init_trait_lists() -> Vec<Vec<Trait>> {
             Trait::SilverVulnerable,
             Trait::HolyVulnerable,
             Trait::HolyFromSunlight,
+            Trait::GarlicAllergy,
         ],
         vec![
             Trait::SilverVulnerable,
             Trait::HolyVulnerable,
             Trait::StakeVulnerable,
             Trait::SunlightVulnerable,
+            Trait::GarlicAllergy,
         ],
     ]
 }

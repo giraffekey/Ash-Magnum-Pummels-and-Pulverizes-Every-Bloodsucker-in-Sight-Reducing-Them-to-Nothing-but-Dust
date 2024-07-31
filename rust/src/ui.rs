@@ -153,6 +153,7 @@ fn trait_description(trait_: Trait) -> String {
         Trait::StakeVulnerable => "Vulnerable to stakes".into(),
         Trait::SunlightVulnerable => "Vulnerable to sunlight".into(),
         Trait::HolyFromSunlight => "Sunlight deals holy damage".into(),
+        Trait::GarlicAllergy => "Allergic to garlic".into(),
     }
 }
 
@@ -161,15 +162,20 @@ fn action_description(action: Action) -> String {
         Action::Attack {
             damage_kind,
             damage,
-        } => match damage_kind {
-            DamageKind::Normal => format!("{} damage", damage),
-            DamageKind::Silver => format!("{} silver damage", damage),
-            DamageKind::Holy => format!("{} holy damage", damage),
-            DamageKind::Fire => format!("{} fire damage", damage),
-            DamageKind::LifeSteal => format!("{} damage, life steal", damage),
-            DamageKind::Stake => "Insta-kill a vampire".into(),
-            DamageKind::Sunlight => format!("{} sunlight damage", damage),
-        },
+            aoe,
+        } => format!(
+            "{}{}",
+            match damage_kind {
+                DamageKind::Normal => format!("{} damage", damage),
+                DamageKind::Silver => format!("{} silver damage", damage),
+                DamageKind::Holy => format!("{} holy damage", damage),
+                DamageKind::Fire => format!("{} fire damage", damage),
+                DamageKind::LifeSteal => format!("{} damage, life steal", damage),
+                DamageKind::Stake => "Insta-kill a vampire".into(),
+                DamageKind::Sunlight => format!("{} sunlight damage", damage),
+            },
+            if aoe { "\nArea of effect" } else { "".into() }
+        ),
         Action::Push {
             damage_kind,
             damage,
@@ -398,6 +404,8 @@ impl AbilityIcon {
                     Ability::VampireBite => Vector2::new(144.0, y),
                     Ability::Mist => Vector2::new(168.0, y),
                     Ability::WoodenStake => Vector2::new(192.0, y),
+                    Ability::Garlic => Vector2::new(216.0, y),
+                    Ability::HolyWater => Vector2::new(240.0, y),
                     _ => unreachable!(),
                 };
                 atlas.set_region(Rect2::new(position, Vector2::new(24.0, 24.0)));
