@@ -934,6 +934,14 @@ impl Enemy {
         self.kind.name()
     }
 
+    /*
+     * Enemies make decisions by creating a list of all possible positions they can use an ability on an
+     * ally from and picking the most preferential one based on the following, in order:
+     * - Whether or not they can move to that space in a single turn
+     * - The highest damage the ability can cause to the player
+     * - The farthest range they can use the ability from
+     * - The closest the position is to their current position
+     */
     pub fn plan(
         &mut self,
         level: &Level,
@@ -1486,6 +1494,7 @@ impl INode2D for Level {
 
             match ally.id {
                 AllyId::AshMagnum => {
+                    // Center cursor on Ash Magnum
                     let mut cursor = self.base().get_node_as::<Cursor>("CursorLayer/Cursor");
                     cursor.set_position(position.to_vector() + Vector2::new(8.0, 8.0));
                     let mut cursor = cursor.bind_mut();
@@ -1499,6 +1508,7 @@ impl INode2D for Level {
                 }
                 AllyId::Alukrod => {
                     drop(ally);
+                    // Alukrod is initially invisible during his introduction dialogue
                     if self.room == Room::GreatHall {
                         ally_node
                             .get_node_as::<Sprite2D>("Sprite")
@@ -1672,10 +1682,16 @@ impl INode2D for Level {
                                     if let Some(path) = path {
                                         let position = *path.last().unwrap();
 
+                                        // Remove enemy from previous positions and add to new position
                                         for i in 0..enemy.width as usize {
                                             for j in 0..enemy.height as usize {
                                                 self.grid[enemy.position.x + i]
                                                     [enemy.position.y + j] = Tile::Empty;
+                                            }
+                                        }
+
+                                        for i in 0..enemy.width as usize {
+                                            for j in 0..enemy.height as usize {
                                                 self.grid[position.x + i][position.y + j] =
                                                     Tile::Enemy(enemy_id);
                                             }
@@ -1855,6 +1871,7 @@ impl Level {
         let mut ally = self.get_ally(ally_id);
         let mut ally = ally.bind_mut();
 
+        // Mist form prevents allies from using abilities
         if !ally.has_acted && !ally.effects.contains_key(&Effect::Mist) {
             let stats = abilities().get(ally.current_ability()).unwrap();
             match stats.action {
@@ -1872,6 +1889,7 @@ impl Level {
                         let mut enemy_ids = HashSet::new();
                         enemy_ids.insert(enemy_id);
 
+                        // AOE attacks also attack adjacent spaces
                         match stats.action {
                             Action::Attack { aoe, .. } if aoe => {
                                 for position in position.adjacent() {
@@ -1895,6 +1913,7 @@ impl Level {
                                         x: enemy.position.x + i,
                                         y: enemy.position.y + j,
                                     };
+                                    // There must not be obstacles obstructing line of sight
                                     match line_to(ally.position, position, self.grid) {
                                         Some(path) if path.len() as u16 <= stats.range => {
                                             if let Some(projectile) = ally.use_ability(position) {

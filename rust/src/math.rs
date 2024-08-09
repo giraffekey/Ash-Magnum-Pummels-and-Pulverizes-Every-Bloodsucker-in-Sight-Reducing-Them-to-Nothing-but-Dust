@@ -152,6 +152,7 @@ impl PartialOrd for Frontier {
     }
 }
 
+// A* algorithm
 pub fn pathfind(
     start: Position,
     goal: Position,
@@ -226,6 +227,7 @@ pub fn pathfind(
     Some(path)
 }
 
+// Find a straight line, unobstructed, between two points
 pub fn line_to(
     start: Position,
     goal: Position,
@@ -255,6 +257,7 @@ pub fn line_to(
     None
 }
 
+// All positions from which an enemy can attack an ally within the given range
 pub fn attack_positions(
     position: Position,
     range: u16,
@@ -361,6 +364,7 @@ impl Row {
     }
 }
 
+// Calculate visible tiles, obstructed by walls, within view distance
 pub fn compute_fov(origin: Position, distance: u16, level: &Level) -> HashSet<Position> {
     let mut visible = HashSet::new();
     visible.insert(origin);
